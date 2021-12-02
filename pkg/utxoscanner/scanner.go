@@ -3,7 +3,7 @@ package utxoscanner
 import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/neutrino-elements/internal/domain"
+	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
 
 type SpendReport struct {
@@ -63,8 +63,8 @@ type UtxoScanner interface {
 }
 
 type utxoScanner struct {
-	filterRepository domain.FilterRepository
-	headerRepository domain.BlockHeaderRepository
+	filterRepository repository.FilterRepository
+	headerRepository repository.BlockHeaderRepository
 }
 
 // var _ UtxoScanner = (*utxoScanner)(nil)
