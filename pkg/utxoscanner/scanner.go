@@ -55,7 +55,7 @@ type SpendReport struct {
 }
 
 type UtxoScanner interface {
-	// Start runs a go-routine in order to handle incoming requests via Watch 
+	// Start runs a go-routine in order to handle incoming requests via Watch
 	Start() (<-chan SpendReport, error)
 	// Stop the scanner
 	Stop() error
