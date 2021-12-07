@@ -23,4 +23,4 @@ MIT - see the LICENSE.md file for details
 ## Acknowledgments
 
 * [Neutrino - Light bitcoin client](https://github.com/lightninglabs/neutrino)
-* [Compact Block Filters for Light Clients - BIP158](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)
+* [Compact Block Filters for Light Clients - BIP158](https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki)
