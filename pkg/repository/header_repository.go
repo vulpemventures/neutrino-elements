@@ -1,8 +1,15 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/vulpemventures/go-elements/block"
+)
+
+var (
+	ErrBlockNotFound   = errors.New("block not found")
+	ErrNoBlocksHeaders = errors.New("no block headers in repository")
 )
 
 type BlockHeaderRepository interface {
