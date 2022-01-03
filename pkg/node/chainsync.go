@@ -73,3 +73,20 @@ func (no *Node) syncWithPeer(peerID PeerID) error {
 
 	return nil
 }
+
+func (n *Node) checkSync(peer *Peer) {
+	if peer == nil {
+		for _, bestPeer := range n.Peers {
+			if bestPeer != nil {
+				peer = bestPeer
+				break
+			}
+		}
+	}
+
+	isSync, _ := n.isSync()
+	if !isSync {
+		logrus.Infof("start sync block headers with peer: %s", peer)
+		n.syncWithPeer(peer.ID())
+	}
+}

@@ -21,5 +21,6 @@ func (n Node) handleHeaders(msgHeader *protocol.MessageHeader, conn net.Conn) er
 		n.blockHeadersCh <- *header
 	}
 
+	n.checkSync(nil) // check if the db is fully sync
 	return nil
 }

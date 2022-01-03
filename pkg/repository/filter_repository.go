@@ -7,7 +7,7 @@ import (
 	"github.com/btcsuite/btcutil/gcs"
 )
 
-type FilterType uint8
+type FilterType byte
 
 const (
 	// only regular filter is supported for now

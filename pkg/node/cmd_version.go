@@ -27,10 +27,6 @@ func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error
 		Version:    version.Version,
 	}
 
-	n.Peers[peer.ID()] = &peer
-	go n.monitorPeer(&peer)
-	logrus.Debugf("new peer %s", peer)
-
 	// check if the peer supports compact block filters
 	if !version.HasService(protocol.SFNodeCF) {
 		return fmt.Errorf("peer %s does not support Compact Filters Service (BIP0158)", peer.ID())
@@ -45,6 +41,7 @@ func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error
 		return err
 	}
 
+	// notify the peer that we would like to receive block header via headers messages
 	sendHeaders, err := protocol.NewSendHeadersMessage(n.Network)
 	if err != nil {
 		return err
@@ -54,14 +51,9 @@ func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error
 		return err
 	}
 
-	isSync, _ := n.isSync()
-	if !isSync {
-		logrus.Infof("%s is not syncing", peer)
-		err = n.syncWithPeer(peer.ID())
-		if err != nil {
-			return err
-		}
-	}
+	n.addPeer(&peer)
+	go n.monitorPeer(&peer)
+	logrus.Debugf("new peer %s", peer)
 
 	return nil
 }

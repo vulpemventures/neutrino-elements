@@ -40,6 +40,20 @@ type peerPing struct {
 	peerID PeerID
 }
 
+func (n *Node) addPeer(peer *Peer) error {
+	if _, found := n.Peers[peer.ID()]; found {
+		return fmt.Errorf("peer already known: %s", peer.ID())
+	}
+
+	n.Peers[peer.ID()] = peer
+
+	if len(n.Peers) == 1 {
+		n.checkSync(peer)
+	}
+
+	return nil
+}
+
 func (n Node) monitorPeers() {
 	peerPings := make(map[uint64]PeerID)
 

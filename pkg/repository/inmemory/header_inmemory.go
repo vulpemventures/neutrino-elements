@@ -153,7 +153,7 @@ func (h *headerInmemory) HasAllAncestors(hash chainhash.Hash) (bool, error) {
 
 	blockHeader := h.headers[hash]
 
-	for blockHeader.Height > 0 {
+	for blockHeader.Height > 1 {
 		currentHash, err := chainhash.NewHash(blockHeader.PrevBlockHash)
 		if err != nil {
 			return false, err
