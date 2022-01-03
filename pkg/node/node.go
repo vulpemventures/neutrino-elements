@@ -19,13 +19,12 @@ type PeerID string
 
 // Node implements a Bitcoin node.
 type Node struct {
-	Network      string
-	NetworkMagic protocol.Magic
-	Peers        map[PeerID]*Peer
-	PingCh       chan peerPing
-	PongCh       chan uint64
-	DisconCh     chan PeerID
-	UserAgent    string
+	Network   protocol.Magic
+	Peers     map[PeerID]*Peer
+	PingCh    chan peerPing
+	PongCh    chan uint64
+	DisconCh  chan PeerID
+	UserAgent string
 
 	blockHeadersCh chan block.Header
 	filtersDb      repository.FilterRepository
@@ -40,13 +39,12 @@ func New(network, userAgent string) (*Node, error) {
 	}
 
 	return &Node{
-		Network:      network,
-		NetworkMagic: networkMagic,
-		Peers:        make(map[PeerID]*Peer),
-		PingCh:       make(chan peerPing),
-		DisconCh:     make(chan PeerID),
-		PongCh:       make(chan uint64),
-		UserAgent:    userAgent,
+		Network:   networkMagic,
+		Peers:     make(map[PeerID]*Peer),
+		PingCh:    make(chan peerPing),
+		DisconCh:  make(chan PeerID),
+		PongCh:    make(chan uint64),
+		UserAgent: userAgent,
 
 		blockHeadersCh: make(chan block.Header),
 		filtersDb:      inmemory.NewFilterInmemory(),
@@ -152,10 +150,19 @@ Loop:
 				logrus.Errorf("failed to handle 'getheaders': %+v", err)
 				continue
 			}
+		case "headers":
+			if err := no.handleHeaders(&msgHeader, conn); err != nil {
+				logrus.Errorf("failed to handle 'headers': %+v", err)
+				continue
+			}
 		}
 	}
 
 	return nil
+}
+
+func (no Node) getServicesFlag() protocol.ServiceFlag {
+	return protocol.SFNodeCF
 }
 
 func (no Node) createNodeVersionMsg(peerAddr *Addr) (*protocol.Message, error) {
@@ -164,10 +171,12 @@ func (no Node) createNodeVersionMsg(peerAddr *Addr) (*protocol.Message, error) {
 		no.UserAgent,
 		peerAddr.IP,
 		peerAddr.Port,
+		no.getServicesFlag(),
 	)
 }
 
 func (no *Node) sendMessage(conn io.Writer, msg *protocol.Message) error {
+	logrus.Debugf("node sends message: %s", msg.CommandString())
 	msgSerialized, err := binary.Marshal(msg)
 	if err != nil {
 		return err

@@ -18,6 +18,20 @@ type Marshaler interface {
 	MarshalBinary() ([]byte, error)
 }
 
+// ensures that littleEndian is used to encode varint value
+func MarshalForVarint(i interface{}) ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	switch val := i.(type) {
+	case uint8, uint16, uint32, uint64:
+		if err := binary.Write(buf, binary.LittleEndian, val); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+	}
+
+	return nil, fmt.Errorf("unsuported varint value type")
+}
+
 // Marshal returns the binary encoding of v.
 func Marshal(v interface{}) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})

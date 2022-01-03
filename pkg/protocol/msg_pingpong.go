@@ -15,7 +15,7 @@ type MsgPong struct {
 }
 
 // NewPingMsg returns a new MsgPing.
-func NewPingMsg(network string) (*Message, uint64, error) {
+func NewPingMsg(network Magic) (*Message, uint64, error) {
 	nonce := rand.Uint64()
 	payload := MsgPing{
 		Nonce: nonce,
@@ -30,7 +30,7 @@ func NewPingMsg(network string) (*Message, uint64, error) {
 }
 
 // NewPongMsg returns a new MsgPong.
-func NewPongMsg(network string, nonce uint64) (*Message, error) {
+func NewPongMsg(network Magic, nonce uint64) (*Message, error) {
 	payload := MsgPong{
 		Nonce: nonce,
 	}

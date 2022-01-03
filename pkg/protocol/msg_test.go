@@ -12,15 +12,15 @@ import (
 func TestMessageSerialization(t *testing.T) {
 	version := protocol.MsgVersion{
 		Version:   protocol.Version,
-		Services:  protocol.SrvNodeNetwork,
+		Services:  uint64(protocol.SFNodeCF),
 		Timestamp: time.Date(2019, 11, 11, 0, 0, 0, 0, time.UTC).Unix(),
 		AddrRecv: protocol.VersionNetAddr{
-			Services: protocol.SrvNodeNetwork,
+			Services: uint64(protocol.SFNodeCF),
 			IP:       protocol.NewIPv4(127, 0, 0, 1),
 			Port:     9333,
 		},
 		AddrFrom: protocol.VersionNetAddr{
-			Services: protocol.SrvNodeNetwork,
+			Services: uint64(protocol.SFNodeCF),
 			IP:       protocol.NewIPv4(127, 0, 0, 1),
 			Port:     9334,
 		},
@@ -29,7 +29,7 @@ func TestMessageSerialization(t *testing.T) {
 		StartHeight: -1,
 		Relay:       true,
 	}
-	msg, err := protocol.NewMessage("version", "simnet", version)
+	msg, err := protocol.NewMessage("version", protocol.MagicNigiri, version)
 	if err != nil {
 		t.Errorf("unexpected error: %+v", err)
 		return

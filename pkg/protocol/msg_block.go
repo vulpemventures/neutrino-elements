@@ -5,7 +5,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/block"
-	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
 )
 
@@ -13,6 +12,8 @@ import (
 type MsgBlock struct {
 	block.Block
 }
+
+var _ binary.Unmarshaler = (*MsgBlock)(nil)
 
 // UnmarshalBinary implements binary.Unmarshaler
 func (blck *MsgBlock) UnmarshalBinary(r io.Reader) error {
@@ -22,16 +23,16 @@ func (blck *MsgBlock) UnmarshalBinary(r io.Reader) error {
 		return err
 	}
 
-	logrus.Debugf("number of bytes: %+v", bytes.Len())
-
-	decodedHeader, err := block.DeserializeHeader(&bytes)
+	decodedBlock, err := block.NewFromBuffer(&bytes)
 	if err != nil {
 		return err
 	}
 
-	blck.Header = decodedHeader
+	blck.Header = decodedBlock.Header
 	blck.TransactionsData = &block.Transactions{
-		Transactions: []*transaction.Transaction{},
+		Transactions: decodedBlock.TransactionsData.Transactions,
 	}
+
+	logrus.Debug(blck.TransactionsData.Transactions)
 	return nil
 }

@@ -11,12 +11,12 @@ import (
 func TestNewVerackMsg(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    string
+		input    protocol.Magic
 		err      error
 		expected *protocol.Message
 	}{
 		{name: "ok",
-			input: "mainnet",
+			input: protocol.MagicNigiri,
 			err:   nil,
 			expected: &protocol.Message{
 				MessageHeader: protocol.MessageHeader{
@@ -28,7 +28,7 @@ func TestNewVerackMsg(t *testing.T) {
 				Payload: []byte{},
 			}},
 		{name: "unsupported network",
-			input:    "unknown",
+			input:    protocol.Magic{0x00, 0x00, 0x00, 0x00},
 			err:      errors.New("unsupported network 'unknown'"),
 			expected: nil},
 	}

@@ -33,7 +33,7 @@ type Message struct {
 }
 
 // NewMessage returns a new Message.
-func NewMessage(cmd, network string, payload interface{}) (*Message, error) {
+func NewMessage(cmd string, networkMagic Magic, payload interface{}) (*Message, error) {
 	serializedPayload, err := binary.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -44,14 +44,9 @@ func NewMessage(cmd, network string, payload interface{}) (*Message, error) {
 		return nil, fmt.Errorf("unsupported command %s", cmd)
 	}
 
-	magic, ok := Networks[network]
-	if !ok {
-		return nil, fmt.Errorf("unsupported network '%s'", network)
-	}
-
 	msg := Message{
 		MessageHeader: MessageHeader{
-			Magic:    magic,
+			Magic:    networkMagic,
 			Command:  command,
 			Length:   uint32(len(serializedPayload)),
 			Checksum: checksum(serializedPayload),
@@ -90,7 +85,7 @@ func (mh MessageHeader) HasValidCommand() bool {
 // Returns false otherwise.
 func (mh MessageHeader) HasValidMagic() bool {
 	switch mh.Magic {
-	case MagicMainnet, MagicSimnet, MagicElements, MagicElementsTestnet, MagicNigiri:
+	case MagicLiquid, MagicLiquidTestnet, MagicNigiri:
 		return true
 	}
 

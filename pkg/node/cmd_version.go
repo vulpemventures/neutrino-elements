@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"io"
 	"net"
 
@@ -28,8 +29,21 @@ func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error
 
 	n.Peers[peer.ID()] = &peer
 	go n.monitorPeer(&peer)
-
 	logrus.Debugf("new peer %s", peer)
+
+	// check if the peer supports compact block filters
+	if !version.HasService(protocol.SFNodeCF) {
+		return fmt.Errorf("peer %s does not support Compact Filters Service (BIP0158)", peer.ID())
+	}
+
+	verack, err := protocol.NewVerackMsg(n.Network)
+	if err != nil {
+		return err
+	}
+
+	if err := n.sendMessage(conn, verack); err != nil {
+		return err
+	}
 
 	sendHeaders, err := protocol.NewSendHeadersMessage(n.Network)
 	if err != nil {
@@ -40,13 +54,13 @@ func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error
 		return err
 	}
 
-	verack, err := protocol.NewVerackMsg(n.Network)
-	if err != nil {
-		return err
-	}
-
-	if err := n.sendMessage(conn, verack); err != nil {
-		return err
+	isSync, _ := n.isSync()
+	if !isSync {
+		logrus.Infof("%s is not syncing", peer)
+		err = n.syncWithPeer(peer.ID())
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

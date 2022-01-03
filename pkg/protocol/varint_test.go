@@ -1,4 +1,4 @@
-package protocol
+package protocol_test
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
 func TestVarintUnmarshalBinary(t *testing.T) {
@@ -52,7 +53,7 @@ func TestVarintUnmarshalBinary(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
 			r := bytes.NewBuffer(test.raw)
-			varint := VarInt{}
+			varint := protocol.VarInt{}
 			err := varint.UnmarshalBinary(r)
 
 			if err == nil && test.err != nil {
@@ -70,7 +71,7 @@ func TestVarintUnmarshalBinary(t *testing.T) {
 				return
 			}
 
-			got := varint.value
+			got := varint.Value
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				tt.Errorf("varint.UnmarshalBinary() mismatch (-want +got):\n%s", diff)
 				return
@@ -122,7 +123,12 @@ func TestVarintInt(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			varint := VarInt{value: test.value}
+			varint, err := protocol.NewVarint(test.value)
+			if err != nil {
+				tt.Errorf("unexpected varint error: %+v", err)
+				return
+			}
+
 			got, err := varint.Int()
 
 			if err == nil && test.err != nil {

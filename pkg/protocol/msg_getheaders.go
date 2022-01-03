@@ -1,44 +1,44 @@
 package protocol
 
 import (
-	"io"
+	"fmt"
 
-	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/btcsuite/btcd/blockchain"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+)
+
+const (
+	maxBlockLocatorsPerMsg = 500
 )
 
 type MsgGetHeaders struct {
 	Version            uint32
-	BlockLocatorHashes [][32]byte
-	HashStop           [32]byte
+	BlockLocatorHashes BlockLocators
+	HashStop           [hashLen]byte
 }
 
-func (msg *MsgGetHeaders) UnmarshalBinary(r io.Reader) error {
-	d := binary.NewDecoder(r)
-	if err := d.Decode(&msg.Version); err != nil {
-		return err
+func NewMsgGetHeaders(network Magic, hashStop [hashLen]byte, blockLocator blockchain.BlockLocator) (*Message, error) {
+	payload := &MsgGetHeaders{
+		Version:            Version,
+		BlockLocatorHashes: [][hashLen]byte{},
+		HashStop:           hashStop,
 	}
 
-	var count VarInt
-	if err := d.Decode(&count); err != nil {
-		return err
-	}
-
-	numberOfBlockLocatorHashes, err := count.Int()
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < numberOfBlockLocatorHashes; i++ {
-		var hash [32]byte
-		if err := d.Decode(&hash); err != nil {
-			return err
+	for _, hash := range blockLocator {
+		err := payload.addBlockLocatorHash(hash)
+		if err != nil {
+			return nil, err
 		}
-		msg.BlockLocatorHashes = append(msg.BlockLocatorHashes, hash)
 	}
 
-	if err := d.Decode(&msg.HashStop); err != nil {
-		return err
+	return NewMessage("getheaders", network, payload)
+}
+
+func (msg *MsgGetHeaders) addBlockLocatorHash(hash *chainhash.Hash) error {
+	if len(msg.BlockLocatorHashes)+1 > maxBlockLocatorsPerMsg {
+		return fmt.Errorf("too many block locator hashes in getheaders message (max: %d)", maxBlockLocatorsPerMsg)
 	}
 
+	msg.BlockLocatorHashes = append(msg.BlockLocatorHashes, *hash)
 	return nil
 }

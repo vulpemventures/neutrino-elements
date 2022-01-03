@@ -25,6 +25,17 @@ func NewDecoder(r io.Reader) *Decoder {
 	}
 }
 
+func (d Decoder) DecodeUint16ForVarint() (uint16, error) {
+	var val uint16
+	lr := io.LimitReader(d.r, 2)
+
+	if err := binary.Read(lr, binary.LittleEndian, &val); err != nil {
+		return 0, err
+	}
+
+	return val, nil
+}
+
 // Decode ...
 func (d Decoder) Decode(v interface{}) error {
 	switch val := v.(type) {
@@ -122,6 +133,12 @@ func (d Decoder) ReadUntilEOF() (bytes.Buffer, error) {
 	}
 
 	return b, nil
+}
+
+func (d Decoder) DecodeBytes(len int64) ([]byte, error) {
+	var out []byte
+	err := d.decodeArray(len, out)
+	return out, err
 }
 
 func (d Decoder) decodeArray(len int64, out []byte) error {

@@ -41,7 +41,6 @@ type peerPing struct {
 }
 
 func (n Node) monitorPeers() {
-	// TODO: make this concurrent
 	peerPings := make(map[uint64]PeerID)
 
 	for {

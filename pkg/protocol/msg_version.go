@@ -19,18 +19,18 @@ type MsgVersion struct {
 }
 
 // NewVersionMsg returns a new MsgVersion.
-func NewVersionMsg(network, userAgent string, peerIP IPv4, peerPort uint16) (*Message, error) {
+func NewVersionMsg(network Magic, userAgent string, peerIP IPv4, peerPort uint16, Services ServiceFlag) (*Message, error) {
 	payload := MsgVersion{
 		Version:   Version,
-		Services:  SrvCompactFilter,
+		Services:  uint64(Services),
 		Timestamp: time.Now().UTC().Unix(),
 		AddrRecv: VersionNetAddr{
-			Services: SrvCompactFilter,
+			Services: uint64(Services) | uint64(SFNodeNetwork),
 			IP:       peerIP,
 			Port:     peerPort,
 		},
 		AddrFrom: VersionNetAddr{
-			Services: SrvCompactFilter,
+			Services: uint64(Services),
 			IP:       NewIPv4(127, 0, 0, 1),
 			Port:     9334,
 		},
@@ -46,4 +46,8 @@ func NewVersionMsg(network, userAgent string, peerIP IPv4, peerPort uint16) (*Me
 	}
 
 	return msg, nil
+}
+
+func (msg MsgVersion) HasService(service ServiceFlag) bool {
+	return msg.Services&uint64(service) == uint64(service)
 }
