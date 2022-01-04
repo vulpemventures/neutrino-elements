@@ -42,7 +42,7 @@ func TestMessageSerialization(t *testing.T) {
 	}
 
 	actual := hex.EncodeToString(msgSerialized)
-	expected := "161c141276657273696f6e000000000072000000463d41ca7f110100010000000000000080a4c85d00000000010000000000000000000000000000000000ffff7f0000012475010000000000000000000000000000000000ffff7f0000012476697a0000000000001c2f5361746f7368693a352e36342f74696e796269743a302e302e312fffffffff01"
+	expected := "1234567876657273696f6e000000000062000000ada9766e80110100400000000000000080a4c85d00000000400000000000000000000000000000000000ffff7f0000012475400000000000000000000000000000000000ffff7f0000012476697a0000000000000c2f746573743a302e312e302fffffffff01"
 	if actual != expected {
 		t.Errorf("expected: %s, actual: %s", expected, actual)
 	}
@@ -77,16 +77,18 @@ func TestHasValidCommand(t *testing.T) {
 }
 
 func TestHasValidMagic(t *testing.T) {
-	magicMainnet := [4]byte{0xf9, 0xbe, 0xb4, 0xd9}
-	magicSimnet := [4]byte{0x16, 0x1c, 0x14, 0x12}
+	magicMainnet := protocol.MagicLiquid
+	magicSimnet := protocol.MagicNigiri
+	magicTestnet := protocol.MagicLiquidTestnet
 
 	tests := []struct {
 		name     string
 		magic    [4]byte
 		expected bool
 	}{
-		{"mainner", magicMainnet, true},
-		{"simner", magicSimnet, true},
+		{"liquid", magicMainnet, true},
+		{"nigiri", magicSimnet, true},
+		{"liquid testnet", magicTestnet, true},
 		{"invalid", [4]byte{0xde, 0xad, 0xbe, 0xef}, false},
 	}
 

@@ -49,7 +49,7 @@ func NewVarint(u interface{}) (VarInt, error) {
 	case uint64:
 		var err error = nil
 		if v > math.MaxInt64 {
-			err = errInvalidVarIntValue
+			v = math.MaxInt64
 		}
 
 		return VarInt{Value: v}, err

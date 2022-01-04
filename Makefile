@@ -8,3 +8,7 @@ fmt:
 	@echo "Gofmt..."
 	@gofmt -w -l .
 
+test:
+	@echo "Testing..."
+	@go test -v ./...
+

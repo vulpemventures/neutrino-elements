@@ -59,7 +59,7 @@ func NewMessage(cmd string, networkMagic Magic, payload interface{}) (*Message, 
 
 // CommandString returns command as a string with zero bytes removed.
 func (mh MessageHeader) CommandString() string {
-	return strings.Trim(string(mh.Command[:]), string(0))
+	return strings.Trim(string(mh.Command[:]), "\x00")
 }
 
 // Validate ...

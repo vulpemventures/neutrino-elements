@@ -1,7 +1,6 @@
 package protocol_test
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 
@@ -20,17 +19,13 @@ func TestNewVerackMsg(t *testing.T) {
 			err:   nil,
 			expected: &protocol.Message{
 				MessageHeader: protocol.MessageHeader{
-					Magic:    [4]byte{249, 190, 180, 217},
+					Magic:    [4]byte{0x12, 0x34, 0x56, 0x78},
 					Command:  [12]byte{118, 101, 114, 97, 99, 107, 0, 0, 0, 0, 0, 0},
 					Length:   uint32(0),
 					Checksum: [4]byte{93, 246, 224, 226},
 				},
 				Payload: []byte{},
 			}},
-		{name: "unsupported network",
-			input:    protocol.Magic{0x00, 0x00, 0x00, 0x00},
-			err:      errors.New("unsupported network 'unknown'"),
-			expected: nil},
 	}
 
 	for _, test := range tests {
@@ -41,7 +36,7 @@ func TestNewVerackMsg(t *testing.T) {
 			}
 
 			if err == nil && test.err != nil {
-				t.Errorf("expected error: %+v, got: %+v", err, actual)
+				t.Errorf("expected error: %+v, got: %+v", test.err, err)
 			}
 
 			if err != nil && test.err != nil && err.Error() != test.err.Error() {
