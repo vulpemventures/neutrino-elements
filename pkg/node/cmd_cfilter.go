@@ -8,7 +8,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (no Node) handleCFilter(header *protocol.MessageHeader, p peer.Peer) error {
+func (no node) handleCFilter(header *protocol.MessageHeader, p peer.Peer) error {
 	var cfilter protocol.MsgCFilter
 
 	lr := io.LimitReader(p.Connection(), int64(header.Length))

@@ -8,7 +8,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handlePing(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) handlePing(header *protocol.MessageHeader, p peer.Peer) error {
 	var ping protocol.MsgPing
 
 	conn := p.Connection()

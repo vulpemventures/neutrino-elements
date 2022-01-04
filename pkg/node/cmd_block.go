@@ -11,7 +11,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
 
-func (no Node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
+func (no node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	var block protocol.MsgBlock
 
 	currentChainTip, err := no.blockHeadersDb.ChainTip()

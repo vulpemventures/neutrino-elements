@@ -10,7 +10,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handleVersion(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) handleVersion(header *protocol.MessageHeader, p peer.Peer) error {
 	var version protocol.MsgVersion
 
 	conn := p.Connection()

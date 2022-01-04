@@ -8,7 +8,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (no Node) handleInv(header *protocol.MessageHeader, p peer.Peer) error {
+func (no node) handleInv(header *protocol.MessageHeader, p peer.Peer) error {
 	var inv protocol.MsgInv
 
 	conn := p.Connection()

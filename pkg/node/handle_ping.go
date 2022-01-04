@@ -15,7 +15,7 @@ type peerPing struct {
 	peerID peer.PeerID
 }
 
-func (n *Node) addPeer(peer peer.Peer) error {
+func (n *node) addPeer(peer peer.Peer) error {
 	if _, found := n.Peers[peer.ID()]; found {
 		return fmt.Errorf("peer already known: %s", peer.ID())
 	}
@@ -31,7 +31,7 @@ func (n *Node) addPeer(peer peer.Peer) error {
 	return nil
 }
 
-func (n *Node) monitorPeers() {
+func (n *node) monitorPeers() {
 	peerPings := make(map[uint64]peer.PeerID)
 
 	for {
@@ -66,7 +66,7 @@ func (n *Node) monitorPeers() {
 }
 
 // monitors the pings/pongs for a peer
-func (n *Node) monitorPeer(peer peer.Peer) {
+func (n *node) monitorPeer(peer peer.Peer) {
 	for {
 		time.Sleep(pingIntervalSec * time.Second)
 

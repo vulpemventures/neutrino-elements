@@ -8,7 +8,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handlePong(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) handlePong(header *protocol.MessageHeader, p peer.Peer) error {
 	var pong protocol.MsgPing
 
 	lr := io.LimitReader(p.Connection(), int64(header.Length))

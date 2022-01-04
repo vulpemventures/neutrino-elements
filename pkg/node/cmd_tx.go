@@ -10,7 +10,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (no Node) handleTx(header *protocol.MessageHeader, p peer.Peer) error {
+func (no node) handleTx(header *protocol.MessageHeader, p peer.Peer) error {
 	var tx protocol.MsgTx
 
 	lr := io.LimitReader(p.Connection(), int64(header.Length))

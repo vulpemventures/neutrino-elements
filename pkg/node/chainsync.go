@@ -17,7 +17,7 @@ var zeroHash [32]byte = [32]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }
 
-func (no *Node) isSync() (bool, error) {
+func (no *node) isSync() (bool, error) {
 	chainTip, err := no.blockHeadersDb.ChainTip()
 	if err != nil {
 		return false, err
@@ -40,12 +40,12 @@ func (no *Node) isSync() (bool, error) {
 	return tipHasAllAncestors, nil
 }
 
-func (no *Node) getGenesisBlockHash() (*chainhash.Hash, error) {
+func (no *node) getGenesisBlockHash() (*chainhash.Hash, error) {
 	genesisHexHash := protocol.GetCheckpoints(no.Network)[0]
 	return chainhash.NewHashFromStr(genesisHexHash)
 }
 
-func (no *Node) syncWithPeer(peerID peer.PeerID) error {
+func (no *node) syncWithPeer(peerID peer.PeerID) error {
 	peer := no.Peers[peerID]
 
 	if peer == nil {
@@ -75,7 +75,7 @@ func (no *Node) syncWithPeer(peerID peer.PeerID) error {
 	return nil
 }
 
-func (n *Node) checkSync(p peer.Peer) {
+func (n *node) checkSync(p peer.Peer) {
 	if p == nil {
 		for _, bestPeer := range n.Peers {
 			if bestPeer != nil {

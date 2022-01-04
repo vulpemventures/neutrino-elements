@@ -19,9 +19,14 @@ const (
 	pingTimeoutSec  = 30
 )
 
-// Node implements an Elements full node.
+type NodeService interface {
+	Start(initialOutboundPeerAddr string) error
+	AddOutboundPeer(peer.Peer) error
+}
+
+// node implements an Elements full node.
 // It aims to sync block headers and compact filters.
-type Node struct {
+type node struct {
 	Network     protocol.Magic
 	Peers       map[peer.PeerID]peer.Peer
 	pingsCh     chan peerPing
@@ -37,14 +42,16 @@ type Node struct {
 	blockHeadersDb   repository.BlockHeaderRepository
 }
 
+var _ NodeService = (*node)(nil)
+
 // New returns a new Node.
-func New(network, userAgent string) (*Node, error) {
+func New(network, userAgent string) (NodeService, error) {
 	networkMagic, ok := protocol.Networks[network]
 	if !ok {
 		return nil, fmt.Errorf("unsupported network %s", network)
 	}
 
-	return &Node{
+	return &node{
 		Network:     networkMagic,
 		Peers:       make(map[peer.PeerID]peer.Peer),
 		pingsCh:     make(chan peerPing),
@@ -63,7 +70,7 @@ func New(network, userAgent string) (*Node, error) {
 // AddOutboundPeer sends a new version message to a new peer
 // returns an error if the peer is already connected.
 // it also starts a goroutine to monitor the peer's messages.
-func (no Node) AddOutboundPeer(outbound peer.Peer) error {
+func (no node) AddOutboundPeer(outbound peer.Peer) error {
 	if _, ok := no.Peers[outbound.ID()]; ok {
 		return fmt.Errorf("peer already known by node")
 	}
@@ -84,7 +91,7 @@ func (no Node) AddOutboundPeer(outbound peer.Peer) error {
 }
 
 // Run starts a node and add an initial outbound peer.
-func (no Node) Start(initialOutboundPeerAddr string) error {
+func (no node) Start(initialOutboundPeerAddr string) error {
 	initialPeer, err := peer.NewPeerTCP(initialOutboundPeerAddr)
 	if err != nil {
 		return err
@@ -104,7 +111,7 @@ func (no Node) Start(initialOutboundPeerAddr string) error {
 
 // Return the best peer (now randomly)
 // TODO : implement a better way to select the best peer (eg. by latency)
-func (no Node) getBestPeerForSync() peer.Peer {
+func (no node) getBestPeerForSync() peer.Peer {
 	if len(no.Peers) == 0 {
 		return nil
 	}
@@ -117,7 +124,7 @@ func (no Node) getBestPeerForSync() peer.Peer {
 }
 
 // handlePeerMessages handles messages coming from peers.
-func (no Node) handlePeerMessages(p peer.Peer) {
+func (no node) handlePeerMessages(p peer.Peer) {
 	tmp := make([]byte, protocol.MsgHeaderLength)
 	conn := p.Connection()
 
@@ -210,12 +217,12 @@ Loop:
 }
 
 // Returns the services (as serviceFlag) supported by the node.
-func (no Node) getServicesFlag() protocol.ServiceFlag {
+func (no node) getServicesFlag() protocol.ServiceFlag {
 	return protocol.SFNodeCF
 }
 
 // Returns the version message of the node.
-func (no Node) createNodeVersionMsg(p peer.Peer) (*protocol.Message, error) {
+func (no node) createNodeVersionMsg(p peer.Peer) (*protocol.Message, error) {
 	peerAddr := p.Addr()
 
 	return protocol.NewVersionMsg(
@@ -228,7 +235,7 @@ func (no Node) createNodeVersionMsg(p peer.Peer) (*protocol.Message, error) {
 }
 
 // sendMessage first Marshal the `msg` arg and then use the `conn` to send it.
-func (no *Node) sendMessage(conn io.Writer, msg *protocol.Message) error {
+func (no *node) sendMessage(conn io.Writer, msg *protocol.Message) error {
 	logrus.Debugf("node sends message: %s", msg.CommandString())
 	msgSerialized, err := binary.Marshal(msg)
 	if err != nil {
@@ -241,7 +248,7 @@ func (no *Node) sendMessage(conn io.Writer, msg *protocol.Message) error {
 
 // on disconnect, remove the peer from the node.
 // and close the connection.
-func (no Node) disconnectPeer(peerID peer.PeerID) {
+func (no node) disconnectPeer(peerID peer.PeerID) {
 	logrus.Debugf("disconnecting peer %s", peerID)
 
 	peer := no.Peers[peerID]
@@ -254,7 +261,7 @@ func (no Node) disconnectPeer(peerID peer.PeerID) {
 }
 
 // monitorBlockHeaders monitors new block headers comming from peers.
-func (no *Node) monitorBlockHeaders() {
+func (no *node) monitorBlockHeaders() {
 	for newHeader := range no.blockHeadersCh {
 		err := no.blockHeadersDb.WriteHeaders(newHeader)
 		if err != nil {
@@ -292,7 +299,7 @@ func (no *Node) monitorBlockHeaders() {
 }
 
 // monitorCFilters monitors new cfilters comming from peers.
-func (no *Node) monitorCFilters() {
+func (no *node) monitorCFilters() {
 	for newCFilterMsg := range no.compactFiltersCh {
 		err := no.filtersDb.PutFilter(newCFilterMsg.BlockHash, newCFilterMsg.Filter, repository.FilterType(newCFilterMsg.FilterType))
 		if err != nil {

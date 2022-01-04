@@ -10,7 +10,7 @@ import (
 )
 
 // skipMessage is using to skip unhandled messages coming from peers
-func (n Node) skipMessage(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) skipMessage(header *protocol.MessageHeader, p peer.Peer) error {
 	logrus.Debugf("skipping message: %s", header.Command)
 
 	lr := io.LimitReader(p.Connection(), int64(header.Length))

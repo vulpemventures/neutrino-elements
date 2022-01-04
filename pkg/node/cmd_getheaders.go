@@ -9,7 +9,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handleGetHeaders(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) handleGetHeaders(header *protocol.MessageHeader, p peer.Peer) error {
 	var getHeaders protocol.MsgGetHeaders
 	lr := io.LimitReader(p.Connection(), int64(header.Length))
 	if err := binary.NewDecoder(lr).Decode(&getHeaders); err != nil {

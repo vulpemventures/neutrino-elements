@@ -5,6 +5,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handleVerack(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) handleVerack(header *protocol.MessageHeader, p peer.Peer) error {
 	return nil
 }
