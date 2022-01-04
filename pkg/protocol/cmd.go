@@ -35,6 +35,8 @@ const (
 	cmdBlockTxn    = "blocktxn"
 	cmdGetCFilters = "getcfilters"
 	cmdCFilter     = "cfilter"
+	cmdWtxIdRelay  = "wtxidrelay"
+	cmdSendAddrv2  = "sendaddrv2"
 	commandLength  = 12
 )
 
@@ -71,6 +73,8 @@ var commands = map[string][commandLength]byte{
 	cmdBlockTxn:    newCommand(cmdBlockTxn),
 	cmdGetCFilters: newCommand(cmdGetCFilters),
 	cmdCFilter:     newCommand(cmdCFilter),
+	cmdWtxIdRelay:  newCommand(cmdWtxIdRelay),
+	cmdSendAddrv2:  newCommand(cmdSendAddrv2),
 }
 
 func newCommand(command string) [commandLength]byte {
