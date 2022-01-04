@@ -60,20 +60,6 @@ func New(network, userAgent string) (*Node, error) {
 	}, nil
 }
 
-// Return the best peer (now randomly)
-// TODO : implement a better way to select the best peer (eg. by latency)
-func (no Node) GetBestPeer() peer.Peer {
-	if len(no.Peers) == 0 {
-		return nil
-	}
-
-	for _, p := range no.Peers {
-		return p
-	}
-
-	return nil
-}
-
 // AddOutboundPeer sends a new version message to a new peer
 // returns an error if the peer is already connected.
 // it also starts a goroutine to monitor the peer's messages.
@@ -93,6 +79,39 @@ func (no Node) AddOutboundPeer(outbound peer.Peer) error {
 	}
 
 	go no.handlePeerMessages(outbound)
+
+	return nil
+}
+
+// Run starts a node and add an initial outbound peer.
+func (no Node) Start(initialOutboundPeerAddr string) error {
+	initialPeer, err := peer.NewPeerTCP(initialOutboundPeerAddr)
+	if err != nil {
+		return err
+	}
+
+	err = no.AddOutboundPeer(initialPeer)
+	if err != nil {
+		return err
+	}
+
+	go no.monitorPeers()
+	go no.monitorBlockHeaders()
+	go no.monitorCFilters()
+
+	return nil
+}
+
+// Return the best peer (now randomly)
+// TODO : implement a better way to select the best peer (eg. by latency)
+func (no Node) getBestPeerForSync() peer.Peer {
+	if len(no.Peers) == 0 {
+		return nil
+	}
+
+	for _, p := range no.Peers {
+		return p
+	}
 
 	return nil
 }
@@ -184,25 +203,6 @@ Loop:
 	}
 }
 
-// Run starts a node and add an initial outbound peer.
-func (no Node) Start(initialOutboundPeerAddr string) error {
-	initialPeer, err := peer.NewPeerTCP(initialOutboundPeerAddr)
-	if err != nil {
-		return err
-	}
-
-	err = no.AddOutboundPeer(initialPeer)
-	if err != nil {
-		return err
-	}
-
-	go no.monitorPeers()
-	go no.monitorBlockHeaders()
-	go no.monitorCFilters()
-
-	return nil
-}
-
 // Returns the services (as serviceFlag) supported by the node.
 func (no Node) getServicesFlag() protocol.ServiceFlag {
 	return protocol.SFNodeCF
@@ -275,7 +275,7 @@ func (no *Node) monitorBlockHeaders() {
 				continue
 			}
 
-			conn := no.GetBestPeer().Connection()
+			conn := no.getBestPeerForSync().Connection()
 			err = no.sendMessage(conn, msg)
 			if err != nil {
 				logrus.Error(err)
