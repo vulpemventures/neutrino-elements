@@ -1,11 +1,10 @@
-package node_test
+package protocol_test
 
 import (
 	"errors"
 	"reflect"
 	"testing"
 
-	"github.com/vulpemventures/neutrino-elements/pkg/node"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
@@ -14,12 +13,12 @@ func TestParseNodeAddr(t *testing.T) {
 		name     string
 		input    string
 		err      error
-		expected *node.Addr
+		expected *protocol.Addr
 	}{
 		{name: "ok",
 			input:    "127.0.0.1:8333",
 			err:      nil,
-			expected: &node.Addr{IP: protocol.NewIPv4(127, 0, 0, 1), Port: 8333}},
+			expected: &protocol.Addr{IP: protocol.NewIPv4(127, 0, 0, 1), Port: 8333}},
 		{name: "empty input",
 			input:    "",
 			err:      errors.New("malformed node address"),
@@ -35,12 +34,12 @@ func TestParseNodeAddr(t *testing.T) {
 		{name: "invalid ip",
 			input:    "300.300.300.300:1234",
 			err:      nil,
-			expected: &node.Addr{IP: protocol.NewIPv4(0, 0, 0, 0), Port: 1234}},
+			expected: &protocol.Addr{IP: protocol.NewIPv4(0, 0, 0, 0), Port: 1234}},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			actual, err := node.ParseNodeAddr(test.input)
+			actual, err := protocol.ParseNodeAddr(test.input)
 			if err != nil && test.err == nil {
 				t.Errorf("unexpected error: %+v", err)
 			}

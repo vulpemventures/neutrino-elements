@@ -6,11 +6,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
 
-func (no Node) handleBlock(header *protocol.MessageHeader, conn io.ReadWriter) error {
+func (no Node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	var block protocol.MsgBlock
 
 	currentChainTip, err := no.blockHeadersDb.ChainTip()
@@ -22,7 +23,7 @@ func (no Node) handleBlock(header *protocol.MessageHeader, conn io.ReadWriter) e
 		logrus.Println(currentChainTip.Height)
 	}
 
-	lr := io.LimitReader(conn, int64(header.Length))
+	lr := io.LimitReader(p.Connection(), int64(header.Length))
 	if err := binary.NewDecoder(lr).Decode(&block); err != nil {
 		return err
 	}

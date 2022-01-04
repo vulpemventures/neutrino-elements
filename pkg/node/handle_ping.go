@@ -2,50 +2,27 @@ package node
 
 import (
 	"fmt"
-	"io"
-	"net"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-const (
-	pingIntervalSec = 120
-	pingTimeoutSec  = 30
-)
-
-// Peer describes a peer node in a network.
-type Peer struct {
-	Address    net.Addr
-	Connection io.ReadWriteCloser
-	PongCh     chan uint64
-	Services   uint64
-	UserAgent  string
-	Version    int32
-}
-
-// ID returns peer ID.
-func (p Peer) ID() PeerID {
-	return PeerID(p.Address.String())
-}
-
-func (p Peer) String() string {
-	return fmt.Sprintf("%s (%s)", p.UserAgent, p.Address)
-}
-
 type peerPing struct {
 	nonce  uint64
-	peerID PeerID
+	peerID peer.PeerID
 }
 
-func (n *Node) addPeer(peer *Peer) error {
+func (n *Node) addPeer(peer peer.Peer) error {
 	if _, found := n.Peers[peer.ID()]; found {
 		return fmt.Errorf("peer already known: %s", peer.ID())
 	}
 
-	n.Peers[peer.ID()] = peer
+	id := peer.ID()
+	n.Peers[id] = peer
+	n.peersPongCh[id] = make(chan uint64)
 
 	if len(n.Peers) == 1 {
 		n.checkSync(peer)
@@ -54,12 +31,12 @@ func (n *Node) addPeer(peer *Peer) error {
 	return nil
 }
 
-func (n Node) monitorPeers() {
-	peerPings := make(map[uint64]PeerID)
+func (n *Node) monitorPeers() {
+	peerPings := make(map[uint64]peer.PeerID)
 
 	for {
 		select {
-		case nonce := <-n.PongCh:
+		case nonce := <-n.pongsCh:
 			peerID := peerPings[nonce]
 			if peerID == "" {
 				break
@@ -69,10 +46,10 @@ func (n Node) monitorPeers() {
 				break
 			}
 
-			peer.PongCh <- nonce
+			n.peersPongCh[peerID] <- nonce
 			delete(peerPings, nonce)
 
-		case pp := <-n.PingCh:
+		case pp := <-n.pingsCh:
 			peerPings[pp.nonce] = pp.peerID
 
 		case peerID := <-n.DisconCh:
@@ -88,7 +65,8 @@ func (n Node) monitorPeers() {
 	}
 }
 
-func (n *Node) monitorPeer(peer *Peer) {
+// monitors the pings/pongs for a peer
+func (n *Node) monitorPeer(peer peer.Peer) {
 	for {
 		time.Sleep(pingIntervalSec * time.Second)
 
@@ -102,13 +80,13 @@ func (n *Node) monitorPeer(peer *Peer) {
 			logrus.Fatalf("monitorPeer, binary.Marshal: %v", err)
 		}
 
-		if _, err := peer.Connection.Write(msg); err != nil {
+		if _, err := peer.Connection().Write(msg); err != nil {
 			n.disconnectPeer(peer.ID())
 		}
 
 		logrus.Debugf("sent 'ping' to %s", peer)
 
-		n.PingCh <- peerPing{
+		n.pingsCh <- peerPing{
 			nonce:  nonce,
 			peerID: peer.ID(),
 		}
@@ -116,7 +94,7 @@ func (n *Node) monitorPeer(peer *Peer) {
 		t := time.NewTimer(pingTimeoutSec * time.Second)
 
 		select {
-		case pn := <-peer.PongCh:
+		case pn := <-n.peersPongCh[peer.ID()]:
 			if pn != nonce {
 				logrus.Errorf("nonce doesn't match for %s: want %d, got %d", peer, nonce, pn)
 				n.DisconCh <- peer.ID()

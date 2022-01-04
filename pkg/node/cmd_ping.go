@@ -4,12 +4,14 @@ import (
 	"io"
 
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handlePing(header *protocol.MessageHeader, conn io.ReadWriter) error {
+func (n Node) handlePing(header *protocol.MessageHeader, p peer.Peer) error {
 	var ping protocol.MsgPing
 
+	conn := p.Connection()
 	lr := io.LimitReader(conn, int64(header.Length))
 	if err := binary.NewDecoder(lr).Decode(&ping); err != nil {
 		return err

@@ -2,15 +2,16 @@ package node
 
 import (
 	"io"
-	"net"
 
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handleHeaders(msgHeader *protocol.MessageHeader, conn net.Conn) error {
+func (n Node) handleHeaders(msgHeader *protocol.MessageHeader, p peer.Peer) error {
 	var headers protocol.MsgHeaders
 
+	conn := p.Connection()
 	lr := io.LimitReader(conn, int64(msgHeader.Length))
 
 	if err := binary.NewDecoder(lr).Decode(&headers); err != nil {

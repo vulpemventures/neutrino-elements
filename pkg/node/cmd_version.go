@@ -3,33 +3,25 @@ package node
 import (
 	"fmt"
 	"io"
-	"net"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error {
+func (n Node) handleVersion(header *protocol.MessageHeader, p peer.Peer) error {
 	var version protocol.MsgVersion
 
+	conn := p.Connection()
 	lr := io.LimitReader(conn, int64(header.Length))
 	if err := binary.NewDecoder(lr).Decode(&version); err != nil {
 		return err
 	}
 
-	peer := Peer{
-		Address:    conn.RemoteAddr(),
-		Connection: conn,
-		PongCh:     make(chan uint64),
-		Services:   version.Services,
-		UserAgent:  version.UserAgent.String,
-		Version:    version.Version,
-	}
-
 	// check if the peer supports compact block filters
 	if !version.HasService(protocol.SFNodeCF) {
-		return fmt.Errorf("peer %s does not support Compact Filters Service (BIP0158)", peer.ID())
+		return fmt.Errorf("peer %s does not support Compact Filters Service (BIP0158)", p.ID())
 	}
 
 	verack, err := protocol.NewVerackMsg(n.Network)
@@ -51,9 +43,9 @@ func (n Node) handleVersion(header *protocol.MessageHeader, conn net.Conn) error
 		return err
 	}
 
-	n.addPeer(&peer)
-	go n.monitorPeer(&peer)
-	logrus.Debugf("new peer %s", peer)
+	n.addPeer(p)
+	go n.monitorPeer(p)
+	logrus.Debugf("new peer %s", p.ID())
 
 	return nil
 }

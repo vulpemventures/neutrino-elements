@@ -1,4 +1,4 @@
-package node
+package protocol
 
 import (
 	"errors"
@@ -6,13 +6,11 @@ import (
 	"net"
 	"strconv"
 	"strings"
-
-	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
 // Addr ...
 type Addr struct {
-	IP   protocol.IPv4
+	IP   IPv4
 	Port uint16
 }
 

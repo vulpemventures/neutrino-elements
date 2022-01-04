@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
 )
@@ -19,9 +22,13 @@ func main() {
 	// 	panic(err)
 	// }
 
-	err = node.Run("localhost:18886")
+	err = node.Start("localhost:18886")
 	if err != nil {
 		panic(err)
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	<-c
 }

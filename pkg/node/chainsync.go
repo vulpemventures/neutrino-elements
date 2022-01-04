@@ -6,6 +6,7 @@ import (
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/sirupsen/logrus"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
@@ -44,7 +45,7 @@ func (no *Node) getGenesisBlockHash() (*chainhash.Hash, error) {
 	return chainhash.NewHashFromStr(genesisHexHash)
 }
 
-func (no *Node) syncWithPeer(peerID PeerID) error {
+func (no *Node) syncWithPeer(peerID peer.PeerID) error {
 	peer := no.Peers[peerID]
 
 	if peer == nil {
@@ -67,18 +68,18 @@ func (no *Node) syncWithPeer(peerID PeerID) error {
 	}
 
 	logrus.Debugf("sending getheaders to peer %s", peerID)
-	if err := no.sendMessage(peer.Connection, msg); err != nil {
+	if err := no.sendMessage(peer.Connection(), msg); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (n *Node) checkSync(peer *Peer) {
-	if peer == nil {
+func (n *Node) checkSync(p peer.Peer) {
+	if p == nil {
 		for _, bestPeer := range n.Peers {
 			if bestPeer != nil {
-				peer = bestPeer
+				p = bestPeer
 				break
 			}
 		}
@@ -86,7 +87,7 @@ func (n *Node) checkSync(peer *Peer) {
 
 	isSync, _ := n.isSync()
 	if !isSync {
-		logrus.Infof("start sync block headers with peer: %s", peer)
-		n.syncWithPeer(peer.ID())
+		logrus.Infof("start sync block headers with peer: %s", p.ID())
+		n.syncWithPeer(p.ID())
 	}
 }

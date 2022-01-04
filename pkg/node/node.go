@@ -4,26 +4,31 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/block"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
+	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 )
 
-// PeerID is peer IP address.
-type PeerID string
+const (
+	pingIntervalSec = 120
+	pingTimeoutSec  = 30
+)
 
-// Node implements a Bitcoin node.
+// Node implements an Elements full node.
+// It aims to sync block headers and compact filters.
 type Node struct {
-	Network   protocol.Magic
-	Peers     map[PeerID]*Peer
-	PingCh    chan peerPing
-	PongCh    chan uint64
-	DisconCh  chan PeerID
+	Network     protocol.Magic
+	Peers       map[peer.PeerID]peer.Peer
+	pingsCh     chan peerPing
+	pongsCh     chan uint64
+	peersPongCh map[peer.PeerID]chan uint64
+
+	DisconCh  chan peer.PeerID
 	UserAgent string
 
 	compactFiltersCh chan protocol.MsgCFilter
@@ -40,12 +45,13 @@ func New(network, userAgent string) (*Node, error) {
 	}
 
 	return &Node{
-		Network:   networkMagic,
-		Peers:     make(map[PeerID]*Peer),
-		PingCh:    make(chan peerPing),
-		DisconCh:  make(chan PeerID),
-		PongCh:    make(chan uint64),
-		UserAgent: userAgent,
+		Network:     networkMagic,
+		Peers:       make(map[peer.PeerID]peer.Peer),
+		pingsCh:     make(chan peerPing),
+		pongsCh:     make(chan uint64),
+		peersPongCh: make(map[peer.PeerID]chan uint64),
+		DisconCh:    make(chan peer.PeerID),
+		UserAgent:   userAgent,
 
 		compactFiltersCh: make(chan protocol.MsgCFilter),
 		blockHeadersCh:   make(chan block.Header),
@@ -54,7 +60,9 @@ func New(network, userAgent string) (*Node, error) {
 	}, nil
 }
 
-func (no Node) GetBestPeer() *Peer {
+// Return the best peer (now randomly)
+// TODO : implement a better way to select the best peer (eg. by latency)
+func (no Node) GetBestPeer() peer.Peer {
 	if len(no.Peers) == 0 {
 		return nil
 	}
@@ -66,43 +74,40 @@ func (no Node) GetBestPeer() *Peer {
 	return nil
 }
 
-// Run starts a node.
-func (no Node) Run(nodeAddr string) error {
-	peerAddr, err := ParseNodeAddr(nodeAddr)
+// AddOutboundPeer sends a new version message to a new peer
+// returns an error if the peer is already connected.
+// it also starts a goroutine to monitor the peer's messages.
+func (no Node) AddOutboundPeer(outbound peer.Peer) error {
+	if _, ok := no.Peers[outbound.ID()]; ok {
+		return fmt.Errorf("peer already known by node")
+	}
+
+	msgVersion, err := no.createNodeVersionMsg(outbound)
 	if err != nil {
 		return err
 	}
 
-	version, err := no.createNodeVersionMsg(peerAddr)
+	err = no.sendMessage(outbound.Connection(), msgVersion)
 	if err != nil {
 		return err
 	}
 
-	conn, err := net.Dial("tcp", nodeAddr)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	go no.handlePeerMessages(outbound)
 
-	err = no.sendMessage(conn, version)
-	if err != nil {
-		return err
-	}
+	return nil
+}
 
-	go no.monitorPeers()
-	go no.monitorBlockHeaders()
-	go no.monitorCFilters()
-
+// handlePeerMessages handles messages coming from peers.
+func (no Node) handlePeerMessages(p peer.Peer) {
 	tmp := make([]byte, protocol.MsgHeaderLength)
+	conn := p.Connection()
 
 Loop:
 	for {
 		n, err := conn.Read(tmp)
 		if err != nil {
-			if err != io.EOF {
-				return err
-			}
 			logrus.Errorf(err.Error())
+			no.DisconCh <- p.ID()
 			break Loop
 		}
 
@@ -121,62 +126,79 @@ Loop:
 
 		switch msgHeader.CommandString() {
 		case "version":
-			if err := no.handleVersion(&msgHeader, conn); err != nil {
+			if err := no.handleVersion(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'version': %+v", err)
 				continue
 			}
 		case "verack":
-			if err := no.handleVerack(&msgHeader, conn); err != nil {
+			if err := no.handleVerack(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'verack': %+v", err)
 				continue
 			}
 		case "ping":
-			if err := no.handlePing(&msgHeader, conn); err != nil {
+			if err := no.handlePing(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'ping': %+v", err)
 				continue
 			}
 		case "pong":
-			if err := no.handlePong(&msgHeader, conn); err != nil {
+			if err := no.handlePong(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'pong': %+v", err)
 				continue
 			}
 		case "inv":
-			if err := no.handleInv(&msgHeader, conn); err != nil {
+			if err := no.handleInv(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'inv': %+v", err)
 				continue
 			}
 		case "tx":
-			if err := no.handleTx(&msgHeader, conn); err != nil {
+			if err := no.handleTx(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'tx': %+v", err)
 				continue
 			}
 		case "block":
-			if err := no.handleBlock(&msgHeader, conn); err != nil {
+			if err := no.handleBlock(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'block': %+v", err)
 				continue
 			}
 		case "sendcmpct":
-			if err := no.handleSendCmpct(&msgHeader, conn); err != nil {
+			if err := no.handleSendCmpct(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'sendcmpct': %+v", err)
 				continue
 			}
 		case "getheaders":
-			if err := no.handleGetHeaders(&msgHeader, conn); err != nil {
+			if err := no.handleGetHeaders(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'getheaders': %+v", err)
 				continue
 			}
 		case "headers":
-			if err := no.handleHeaders(&msgHeader, conn); err != nil {
+			if err := no.handleHeaders(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'headers': %+v", err)
 				continue
 			}
 		case "cfilter":
-			if err := no.handleCFilter(&msgHeader, conn); err != nil {
+			if err := no.handleCFilter(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to handle 'cfilter': %+v", err)
 				continue
 			}
 		}
 	}
+}
+
+// Run starts a node and add an initial outbound peer.
+func (no Node) Start(initialOutboundPeerAddr string) error {
+	initialPeer, err := peer.NewPeerTCP(initialOutboundPeerAddr)
+	if err != nil {
+		return err
+	}
+
+	err = no.AddOutboundPeer(initialPeer)
+	if err != nil {
+		return err
+	}
+
+	go no.monitorPeers()
+	go no.monitorBlockHeaders()
+	go no.monitorCFilters()
 
 	return nil
 }
@@ -187,7 +209,9 @@ func (no Node) getServicesFlag() protocol.ServiceFlag {
 }
 
 // Returns the version message of the node.
-func (no Node) createNodeVersionMsg(peerAddr *Addr) (*protocol.Message, error) {
+func (no Node) createNodeVersionMsg(p peer.Peer) (*protocol.Message, error) {
+	peerAddr := p.Addr()
+
 	return protocol.NewVersionMsg(
 		no.Network,
 		no.UserAgent,
@@ -211,7 +235,7 @@ func (no *Node) sendMessage(conn io.Writer, msg *protocol.Message) error {
 
 // on disconnect, remove the peer from the node.
 // and close the connection.
-func (no Node) disconnectPeer(peerID PeerID) {
+func (no Node) disconnectPeer(peerID peer.PeerID) {
 	logrus.Debugf("disconnecting peer %s", peerID)
 
 	peer := no.Peers[peerID]
@@ -219,7 +243,7 @@ func (no Node) disconnectPeer(peerID PeerID) {
 		return
 	}
 
-	peer.Connection.Close()
+	peer.Connection().Close()
 	delete(no.Peers, peerID)
 }
 
@@ -251,7 +275,7 @@ func (no *Node) monitorBlockHeaders() {
 				continue
 			}
 
-			conn := no.GetBestPeer().Connection
+			conn := no.GetBestPeer().Connection()
 			err = no.sendMessage(conn, msg)
 			if err != nil {
 				logrus.Error(err)
