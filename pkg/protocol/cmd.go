@@ -33,6 +33,8 @@ const (
 	cmdCmpctBlock  = "cmpctblock"
 	cmdGetBlockTxn = "getblocktxn"
 	cmdBlockTxn    = "blocktxn"
+	cmdGetCFilters = "getcfilters"
+	cmdCFilter     = "cfilter"
 	commandLength  = 12
 )
 
@@ -67,6 +69,8 @@ var commands = map[string][commandLength]byte{
 	cmdCmpctBlock:  newCommand(cmdCmpctBlock),
 	cmdGetBlockTxn: newCommand(cmdGetBlockTxn),
 	cmdBlockTxn:    newCommand(cmdBlockTxn),
+	cmdGetCFilters: newCommand(cmdGetCFilters),
+	cmdCFilter:     newCommand(cmdCFilter),
 }
 
 func newCommand(command string) [commandLength]byte {

@@ -26,9 +26,10 @@ type Node struct {
 	DisconCh  chan PeerID
 	UserAgent string
 
-	blockHeadersCh chan block.Header
-	filtersDb      repository.FilterRepository
-	blockHeadersDb repository.BlockHeaderRepository
+	compactFiltersCh chan protocol.MsgCFilter
+	blockHeadersCh   chan block.Header
+	filtersDb        repository.FilterRepository
+	blockHeadersDb   repository.BlockHeaderRepository
 }
 
 // New returns a new Node.
@@ -46,10 +47,23 @@ func New(network, userAgent string) (*Node, error) {
 		PongCh:    make(chan uint64),
 		UserAgent: userAgent,
 
-		blockHeadersCh: make(chan block.Header),
-		filtersDb:      inmemory.NewFilterInmemory(),
-		blockHeadersDb: inmemory.NewHeaderInmemory(),
+		compactFiltersCh: make(chan protocol.MsgCFilter),
+		blockHeadersCh:   make(chan block.Header),
+		filtersDb:        inmemory.NewFilterInmemory(),
+		blockHeadersDb:   inmemory.NewHeaderInmemory(),
 	}, nil
+}
+
+func (no Node) GetBestPeer() *Peer {
+	if len(no.Peers) == 0 {
+		return nil
+	}
+
+	for _, p := range no.Peers {
+		return p
+	}
+
+	return nil
 }
 
 // Run starts a node.
@@ -77,6 +91,7 @@ func (no Node) Run(nodeAddr string) error {
 
 	go no.monitorPeers()
 	go no.monitorBlockHeaders()
+	go no.monitorCFilters()
 
 	tmp := make([]byte, protocol.MsgHeaderLength)
 
@@ -155,16 +170,23 @@ Loop:
 				logrus.Errorf("failed to handle 'headers': %+v", err)
 				continue
 			}
+		case "cfilter":
+			if err := no.handleCFilter(&msgHeader, conn); err != nil {
+				logrus.Errorf("failed to handle 'cfilter': %+v", err)
+				continue
+			}
 		}
 	}
 
 	return nil
 }
 
+// Returns the services (as serviceFlag) supported by the node.
 func (no Node) getServicesFlag() protocol.ServiceFlag {
 	return protocol.SFNodeCF
 }
 
+// Returns the version message of the node.
 func (no Node) createNodeVersionMsg(peerAddr *Addr) (*protocol.Message, error) {
 	return protocol.NewVersionMsg(
 		no.Network,
@@ -175,6 +197,7 @@ func (no Node) createNodeVersionMsg(peerAddr *Addr) (*protocol.Message, error) {
 	)
 }
 
+// sendMessage first Marshal the `msg` arg and then use the `conn` to send it.
 func (no *Node) sendMessage(conn io.Writer, msg *protocol.Message) error {
 	logrus.Debugf("node sends message: %s", msg.CommandString())
 	msgSerialized, err := binary.Marshal(msg)
@@ -186,6 +209,8 @@ func (no *Node) sendMessage(conn io.Writer, msg *protocol.Message) error {
 	return err
 }
 
+// on disconnect, remove the peer from the node.
+// and close the connection.
 func (no Node) disconnectPeer(peerID PeerID) {
 	logrus.Debugf("disconnecting peer %s", peerID)
 
@@ -198,11 +223,51 @@ func (no Node) disconnectPeer(peerID PeerID) {
 	delete(no.Peers, peerID)
 }
 
+// monitorBlockHeaders monitors new block headers comming from peers.
 func (no *Node) monitorBlockHeaders() {
 	for newHeader := range no.blockHeadersCh {
 		err := no.blockHeadersDb.WriteHeaders(newHeader)
 		if err != nil {
 			logrus.Error(err)
+			continue
+		}
+
+		if len(no.Peers) > 0 {
+			hash, err := newHeader.Hash()
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+
+			getcFilter := protocol.MsgGetCFilters{
+				FilterType:  0,
+				StartHeight: newHeader.Height,
+				StopHash:    hash,
+			}
+
+			msg, err := protocol.NewMessage("getcfilters", no.Network, &getcFilter)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+
+			conn := no.GetBestPeer().Connection
+			err = no.sendMessage(conn, msg)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+		}
+	}
+}
+
+// monitorCFilters monitors new cfilters comming from peers.
+func (no *Node) monitorCFilters() {
+	for newCFilterMsg := range no.compactFiltersCh {
+		err := no.filtersDb.PutFilter(newCFilterMsg.BlockHash, newCFilterMsg.Filter, repository.FilterType(newCFilterMsg.FilterType))
+		if err != nil {
+			logrus.Error(err)
+			continue
 		}
 	}
 }
