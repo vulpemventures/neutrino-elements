@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 
@@ -17,6 +18,55 @@ type MsgCFilter struct {
 }
 
 var _ binary.Unmarshaler = (*MsgCFilter)(nil)
+var _ binary.Marshaler = (*MsgCFilter)(nil)
+
+func NewMsgCFilter(network Magic, blockHash *chainhash.Hash, filter *gcs.Filter) (*Message, error) {
+	payload := &MsgCFilter{
+		FilterType: 0,
+		BlockHash:  blockHash,
+		Filter:     filter,
+	}
+
+	return NewMessage("cfilter", network, payload)
+}
+
+func (msg *MsgCFilter) MarshalBinary() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+
+	if err := buf.WriteByte(msg.FilterType); err != nil {
+		return nil, err
+	}
+
+	b, err := binary.Marshal(msg.BlockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := buf.Write(b); err != nil {
+		return nil, err
+	}
+
+	bytesFilter, err := msg.Filter.NBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	filterLen := newFromInt(len(bytesFilter))
+	b, err = binary.Marshal(filterLen)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := buf.Write(b); err != nil {
+		return nil, err
+	}
+
+	if _, err := buf.Write(bytesFilter); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
 
 func (msg *MsgCFilter) UnmarshalBinary(r io.Reader) error {
 	d := binary.NewDecoder(r)

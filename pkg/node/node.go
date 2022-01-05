@@ -222,6 +222,11 @@ Loop:
 				logrus.Errorf("failed to handle 'cfilter': %+v", err)
 				continue
 			}
+		case "getcfilters":
+			if err := no.handleGetCFilters(&msgHeader, p); err != nil {
+				logrus.Errorf("failed to handle 'getcfilters': %+v", err)
+				continue
+			}
 		default:
 			if err := no.skipMessage(&msgHeader, p); err != nil {
 				logrus.Errorf("failed to skip message: %+v", err)
