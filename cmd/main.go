@@ -15,6 +15,8 @@ type State struct {
 }
 
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
+
 	state := &State{
 		filtersDB:      inmemory.NewFilterInmemory(),
 		blockHeadersDB: inmemory.NewHeaderInmemory(),

@@ -26,7 +26,7 @@ func (msg *MsgCFilter) UnmarshalBinary(r io.Reader) error {
 	}
 
 	// invalid filter type
-	if msg.FilterType == 255 {
+	if msg.FilterType != 0 {
 		return fmt.Errorf("invalid filter type")
 	}
 
@@ -52,15 +52,13 @@ func (msg *MsgCFilter) UnmarshalBinary(r io.Reader) error {
 		return err
 	}
 
-	bytesFilter, err := d.ReadUntilEOF()
+	bytesFilter, err := d.DecodeBytes(int64(len))
 	if err != nil {
 		return err
 	}
 
-	filterEncoded := bytesFilter.Bytes()[:len]
-
 	gcsFilter, err := gcs.FromNBytes(
-		builder.DefaultP, builder.DefaultM, filterEncoded,
+		builder.DefaultP, builder.DefaultM, bytesFilter,
 	)
 
 	if err != nil {

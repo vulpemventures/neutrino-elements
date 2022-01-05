@@ -11,7 +11,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
-	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 )
 
 const (
@@ -21,6 +20,7 @@ const (
 
 type NodeService interface {
 	Start(initialOutboundPeerAddr string) error
+	Stop() error
 	AddOutboundPeer(peer.Peer) error
 }
 
@@ -40,15 +40,24 @@ type node struct {
 	blockHeadersCh   chan block.Header
 	filtersDb        repository.FilterRepository
 	blockHeadersDb   repository.BlockHeaderRepository
+
+	quit chan struct{}
 }
 
 var _ NodeService = (*node)(nil)
 
+type NodeConfig struct {
+	Network        string
+	UserAgent      string
+	FiltersDB      repository.FilterRepository
+	BlockHeadersDB repository.BlockHeaderRepository
+}
+
 // New returns a new Node.
-func New(network, userAgent string) (NodeService, error) {
-	networkMagic, ok := protocol.Networks[network]
+func New(config NodeConfig) (NodeService, error) {
+	networkMagic, ok := protocol.Networks[config.Network]
 	if !ok {
-		return nil, fmt.Errorf("unsupported network %s", network)
+		return nil, fmt.Errorf("unsupported network %s", config.Network)
 	}
 
 	return &node{
@@ -58,12 +67,13 @@ func New(network, userAgent string) (NodeService, error) {
 		pongsCh:     make(chan uint64),
 		peersPongCh: make(map[peer.PeerID]chan uint64),
 		DisconCh:    make(chan peer.PeerID),
-		UserAgent:   userAgent,
+		UserAgent:   config.UserAgent,
 
 		compactFiltersCh: make(chan protocol.MsgCFilter),
 		blockHeadersCh:   make(chan block.Header),
-		filtersDb:        inmemory.NewFilterInmemory(),
-		blockHeadersDb:   inmemory.NewHeaderInmemory(),
+		filtersDb:        config.FiltersDB,
+		blockHeadersDb:   config.BlockHeadersDB,
+		quit:             make(chan struct{}),
 	}, nil
 }
 
@@ -92,6 +102,7 @@ func (no node) AddOutboundPeer(outbound peer.Peer) error {
 
 // Run starts a node and add an initial outbound peer.
 func (no node) Start(initialOutboundPeerAddr string) error {
+	no.quit = make(chan struct{})
 	initialPeer, err := peer.NewPeerTCP(initialOutboundPeerAddr)
 	if err != nil {
 		return err
@@ -106,6 +117,11 @@ func (no node) Start(initialOutboundPeerAddr string) error {
 	go no.monitorBlockHeaders()
 	go no.monitorCFilters()
 
+	return nil
+}
+
+func (no *node) Stop() error {
+	close(no.quit)
 	return nil
 }
 
@@ -262,37 +278,42 @@ func (no node) disconnectPeer(peerID peer.PeerID) {
 
 // monitorBlockHeaders monitors new block headers comming from peers.
 func (no *node) monitorBlockHeaders() {
-	for newHeader := range no.blockHeadersCh {
-		err := no.blockHeadersDb.WriteHeaders(newHeader)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-
-		if len(no.Peers) > 0 {
-			hash, err := newHeader.Hash()
+	for {
+		select {
+		case <-no.quit:
+			return
+		case newHeader := <-no.blockHeadersCh:
+			err := no.blockHeadersDb.WriteHeaders(newHeader)
 			if err != nil {
 				logrus.Error(err)
 				continue
 			}
 
-			getcFilter := protocol.MsgGetCFilters{
-				FilterType:  0,
-				StartHeight: newHeader.Height,
-				StopHash:    hash,
-			}
+			if len(no.Peers) > 0 {
+				hash, err := newHeader.Hash()
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
 
-			msg, err := protocol.NewMessage("getcfilters", no.Network, &getcFilter)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
+				getcFilter := protocol.MsgGetCFilters{
+					FilterType:  0,
+					StartHeight: newHeader.Height,
+					StopHash:    hash,
+				}
 
-			conn := no.getBestPeerForSync().Connection()
-			err = no.sendMessage(conn, msg)
-			if err != nil {
-				logrus.Error(err)
-				continue
+				msg, err := protocol.NewMessage("getcfilters", no.Network, &getcFilter)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+
+				conn := no.getBestPeerForSync().Connection()
+				err = no.sendMessage(conn, msg)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
 			}
 		}
 	}
@@ -300,11 +321,16 @@ func (no *node) monitorBlockHeaders() {
 
 // monitorCFilters monitors new cfilters comming from peers.
 func (no *node) monitorCFilters() {
-	for newCFilterMsg := range no.compactFiltersCh {
-		err := no.filtersDb.PutFilter(newCFilterMsg.BlockHash, newCFilterMsg.Filter, repository.FilterType(newCFilterMsg.FilterType))
-		if err != nil {
-			logrus.Error(err)
-			continue
+	for {
+		select {
+		case <-no.quit:
+			return
+		case newCFilterMsg := <-no.compactFiltersCh:
+			err := no.filtersDb.PutFilter(newCFilterMsg.BlockHash, newCFilterMsg.Filter, repository.RegularFilter)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
 		}
 	}
 }

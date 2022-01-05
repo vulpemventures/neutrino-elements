@@ -36,6 +36,8 @@ func (n *node) monitorPeers() {
 
 	for {
 		select {
+		case <-n.quit:
+			return
 		case nonce := <-n.pongsCh:
 			peerID := peerPings[nonce]
 			if peerID == "" {
@@ -67,45 +69,52 @@ func (n *node) monitorPeers() {
 
 // monitors the pings/pongs for a peer
 func (n *node) monitorPeer(peer peer.Peer) {
+	ticker := time.NewTicker(pingIntervalSec * time.Second)
+	defer ticker.Stop()
+
 	for {
-		time.Sleep(pingIntervalSec * time.Second)
-
-		ping, nonce, err := protocol.NewPingMsg(n.Network)
-		if err != nil {
-			logrus.Fatalf("monitorPeer, NewPingMsg: %v", err)
-		}
-
-		msg, err := binary.Marshal(ping)
-		if err != nil {
-			logrus.Fatalf("monitorPeer, binary.Marshal: %v", err)
-		}
-
-		if _, err := peer.Connection().Write(msg); err != nil {
-			n.disconnectPeer(peer.ID())
-		}
-
-		logrus.Debugf("sent 'ping' to %s", peer)
-
-		n.pingsCh <- peerPing{
-			nonce:  nonce,
-			peerID: peer.ID(),
-		}
-
-		t := time.NewTimer(pingTimeoutSec * time.Second)
-
 		select {
-		case pn := <-n.peersPongCh[peer.ID()]:
-			if pn != nonce {
-				logrus.Errorf("nonce doesn't match for %s: want %d, got %d", peer, nonce, pn)
+		case <-n.quit:
+			logrus.Warn("monitorPeer: quit")
+			return
+		case <-ticker.C:
+			ping, nonce, err := protocol.NewPingMsg(n.Network)
+			if err != nil {
+				logrus.Fatalf("monitorPeer, NewPingMsg: %v", err)
+			}
+
+			msg, err := binary.Marshal(ping)
+			if err != nil {
+				logrus.Fatalf("monitorPeer, binary.Marshal: %v", err)
+			}
+
+			if _, err := peer.Connection().Write(msg); err != nil {
+				n.disconnectPeer(peer.ID())
+			}
+
+			logrus.Debugf("sent 'ping' to %s", peer)
+
+			n.pingsCh <- peerPing{
+				nonce:  nonce,
+				peerID: peer.ID(),
+			}
+
+			t := time.NewTimer(pingTimeoutSec * time.Second)
+
+			select {
+			case pn := <-n.peersPongCh[peer.ID()]:
+				if pn != nonce {
+					logrus.Errorf("nonce doesn't match for %s: want %d, got %d", peer, nonce, pn)
+					n.DisconCh <- peer.ID()
+					return
+				}
+				logrus.Debugf("got 'pong' from %s", peer)
+			case <-t.C:
 				n.DisconCh <- peer.ID()
 				return
 			}
-			logrus.Debugf("got 'pong' from %s", peer)
-		case <-t.C:
-			n.DisconCh <- peer.ID()
-			return
-		}
 
-		t.Stop()
+			t.Stop()
+		}
 	}
 }

@@ -19,5 +19,4 @@ var ErrFilterNotFound = errors.New("filter not found")
 type FilterRepository interface {
 	PutFilter(*chainhash.Hash, *gcs.Filter, FilterType) error
 	FetchFilter(*chainhash.Hash, FilterType) (*gcs.Filter, error)
-	PurgeFilters(FilterType) error
 }

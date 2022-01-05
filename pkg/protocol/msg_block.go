@@ -3,7 +3,6 @@ package protocol
 import (
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/block"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
 )
@@ -33,6 +32,5 @@ func (blck *MsgBlock) UnmarshalBinary(r io.Reader) error {
 		Transactions: decodedBlock.TransactionsData.Transactions,
 	}
 
-	logrus.Debug(blck.TransactionsData.Transactions)
 	return nil
 }

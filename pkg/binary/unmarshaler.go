@@ -136,7 +136,17 @@ func (d Decoder) ReadUntilEOF() (bytes.Buffer, error) {
 }
 
 func (d Decoder) DecodeBytes(len int64) ([]byte, error) {
-	var out []byte
+	if len <= 0 {
+		return nil, fmt.Errorf("invalid length %d", len)
+	}
+
+	if len == 1 {
+		var val uint8
+		err := d.decodeUint8(&val)
+		return []byte{byte(val)}, err
+	}
+
+	out := make([]byte, len)
 	err := d.decodeArray(len, out)
 	return out, err
 }

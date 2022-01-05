@@ -5,11 +5,12 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil/gcs"
+	"github.com/btcsuite/btcutil/gcs/builder"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
 
 type FilterInmemory struct {
-	filtersByHash map[chainhash.Hash]gcs.Filter
+	filtersByHash map[string][]byte
 	locker        *sync.RWMutex
 }
 
@@ -17,7 +18,7 @@ var _ repository.FilterRepository = (*FilterInmemory)(nil)
 
 func NewFilterInmemory() *FilterInmemory {
 	return &FilterInmemory{
-		filtersByHash: make(map[chainhash.Hash]gcs.Filter),
+		filtersByHash: make(map[string][]byte),
 		locker:        new(sync.RWMutex),
 	}
 }
@@ -26,7 +27,12 @@ func (f *FilterInmemory) PutFilter(blockHash *chainhash.Hash, filter *gcs.Filter
 	f.locker.Lock()
 	defer f.locker.Unlock()
 
-	f.filtersByHash[*blockHash] = *filter
+	filterBytes, err := filter.NBytes()
+	if err != nil {
+		return err
+	}
+
+	f.filtersByHash[blockHash.String()] = filterBytes
 	return nil
 }
 
@@ -34,18 +40,15 @@ func (f *FilterInmemory) FetchFilter(blockHash *chainhash.Hash, filterType repos
 	f.locker.RLock()
 	defer f.locker.RUnlock()
 
-	filter, ok := f.filtersByHash[*blockHash]
+	filter, ok := f.filtersByHash[blockHash.String()]
 	if !ok {
 		return nil, repository.ErrFilterNotFound
 	}
 
-	return &filter, nil
-}
+	gcsFilter, err := gcs.FromNBytes(builder.DefaultP, builder.DefaultM, filter)
+	if err != nil {
+		return nil, err
+	}
 
-func (f *FilterInmemory) PurgeFilters(filterType repository.FilterType) error {
-	f.locker.Lock()
-	defer f.locker.Unlock()
-
-	f.filtersByHash = make(map[chainhash.Hash]gcs.Filter)
-	return nil
+	return gcsFilter, nil
 }

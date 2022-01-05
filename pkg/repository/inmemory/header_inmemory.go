@@ -55,8 +55,18 @@ func (h *headerInmemory) GetBlockHeader(hash chainhash.Hash) (*block.Header, err
 	return blockHeader, nil
 }
 
-func (h *headerInmemory) GetBlockHeaderByHeight(height uint32) (*block.Header, error) {
-	return h.getBlockHeaderByHeight(height)
+func (h *headerInmemory) GetBlockHashByHeight(height uint32) (*chainhash.Hash, error) {
+	blockHeader, err := h.getBlockHeaderByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := blockHeader.Hash()
+	if err != nil {
+		return nil, err
+	}
+
+	return &hash, nil
 }
 
 func (h *headerInmemory) WriteHeaders(headers ...block.Header) error {

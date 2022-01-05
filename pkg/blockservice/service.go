@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/block"
 )
 
@@ -61,8 +60,6 @@ func (b *esploraBlockService) GetBlock(hash *chainhash.Hash) (*block.Block, erro
 	if err != nil {
 		return nil, err
 	}
-
-	logrus.Debug("getBlock: ", block)
 
 	return block, nil
 }

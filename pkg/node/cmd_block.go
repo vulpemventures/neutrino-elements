@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/sirupsen/logrus"
@@ -27,13 +26,6 @@ func (no node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	if err := binary.NewDecoder(lr).Decode(&block); err != nil {
 		return err
 	}
-
-	hash, err := block.Header.Hash()
-	if err != nil {
-		return fmt.Errorf("block.Hash: %+v", err)
-	}
-
-	logrus.Debugf("block: %s", hash.String())
 
 	no.blockHeadersCh <- *block.Header
 

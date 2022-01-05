@@ -33,16 +33,18 @@ type scannerService struct {
 	requestsQueue *scanRequestQueue
 	filterDB      repository.FilterRepository
 	headerDB      repository.BlockHeaderRepository
+	genesisHash   *chainhash.Hash
 	blockService  blockservice.BlockService
 	quitCh        chan struct{}
 }
 
 var _ ScannerService = (*scannerService)(nil)
 
-func NewUtxoScanner(
+func New(
 	filterDB repository.FilterRepository,
 	headerDB repository.BlockHeaderRepository,
 	blockSvc blockservice.BlockService,
+	genesisHash *chainhash.Hash,
 ) ScannerService {
 	return &scannerService{
 		requestsQueue: newScanRequestQueue(),
@@ -50,6 +52,7 @@ func NewUtxoScanner(
 		headerDB:      headerDB,
 		blockService:  blockSvc,
 		quitCh:        make(chan struct{}),
+		genesisHash:   genesisHash,
 	}
 }
 
@@ -84,12 +87,15 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 	defer close(s.quitCh)
 
 	for {
+		s.requestsQueue.cond.L.Lock()
 		for s.requestsQueue.isEmpty() {
+			logrus.Debug("scanner queue is empty, waiting for new requests")
 			s.requestsQueue.cond.Wait() // wait for new requests
 
 			// check if we should quit the routine
 			select {
 			case <-s.quitCh:
+				s.requestsQueue.cond.L.Unlock()
 				return
 			default:
 			}
@@ -99,7 +105,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 		nextRequest := s.requestsQueue.peek()
 		err := s.requestWorker(nextRequest.startHeight, ch)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("error while scanning: %v", err)
 		}
 
 		// check if we should quit the routine
@@ -133,26 +139,25 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 			itemsBytes[i] = req.item.Bytes()
 		}
 
-		// get the block for height
-		header, err := s.headerDB.GetBlockHeaderByHeight(startHeight)
-		if err != nil {
-			return err
-		}
-
-		// compute the block hash
-		blockHash, err := header.Hash()
-		if err != nil {
-			return err
+		// get the block hash for height
+		var blockHash *chainhash.Hash
+		if nextHeight == 0 {
+			blockHash = s.genesisHash
+		} else {
+			blockHash, err = s.headerDB.GetBlockHashByHeight(nextHeight)
+			if err != nil {
+				return err
+			}
 		}
 
 		// check with filterDB if the block has one of the items
-		matched, err := s.blockFilterMatches(itemsBytes, &blockHash)
+		matched, err := s.blockFilterMatches(itemsBytes, blockHash)
 		if err != nil {
 			return err
 		}
 
 		if matched {
-			reports, remainReqs, err := s.extractBlockMatches(&blockHash, nextBatch)
+			reports, remainReqs, err := s.extractBlockMatches(blockHash, nextBatch)
 			if err != nil {
 				return err
 			}
@@ -170,6 +175,11 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 		// increment the height to scan
 		// if nothing was found, we can just continue with same batch and next height
 		nextHeight++
+	}
+
+	// enqueue the remaining requests
+	for _, req := range nextBatch {
+		s.requestsQueue.enqueue(req)
 	}
 
 	return nil
