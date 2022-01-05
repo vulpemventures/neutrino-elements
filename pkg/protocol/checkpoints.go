@@ -2,6 +2,7 @@ package protocol
 
 type Checkpoints map[uint32]string
 
+// TODO populate checkpoints and add check during node sync
 var (
 	// Checkpoints for mainnet
 	mainnetCheckpoints = Checkpoints{

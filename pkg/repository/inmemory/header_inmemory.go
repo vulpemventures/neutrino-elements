@@ -55,6 +55,10 @@ func (h *headerInmemory) GetBlockHeader(hash chainhash.Hash) (*block.Header, err
 	return blockHeader, nil
 }
 
+func (h *headerInmemory) GetBlockHeaderByHeight(height uint32) (*block.Header, error) {
+	return h.getBlockHeaderByHeight(height)
+}
+
 func (h *headerInmemory) WriteHeaders(headers ...block.Header) error {
 	h.locker.Lock()
 	defer h.locker.Unlock()

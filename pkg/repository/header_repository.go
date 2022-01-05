@@ -17,6 +17,7 @@ type BlockHeaderRepository interface {
 	// chain tip returns the best block header in the store
 	ChainTip() (*block.Header, error)
 	GetBlockHeader(chainhash.Hash) (*block.Header, error)
+	GetBlockHeaderByHeight(uint32) (*block.Header, error)
 	WriteHeaders(...block.Header) error
 	// LatestBlockLocator returns the block locator for the latest known tip as root of the locator
 	LatestBlockLocator() (blockchain.BlockLocator, error)
