@@ -11,6 +11,8 @@ import (
 	"github.com/vulpemventures/go-elements/block"
 )
 
+var ErrorBlockNotFound = fmt.Errorf("block not found")
+
 type BlockService interface {
 	GetBlock(hash *chainhash.Hash) (*block.Block, error)
 }
@@ -48,6 +50,10 @@ func (b *esploraBlockService) GetBlock(hash *chainhash.Hash) (*block.Block, erro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		if resp.StatusCode == 404 {
+			return nil, ErrorBlockNotFound
+		}
+
 		return nil, fmt.Errorf("getBlock http get error, status code: %v", resp.StatusCode)
 	}
 

@@ -100,6 +100,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 			default:
 			}
 		}
+		s.requestsQueue.cond.L.Unlock()
 
 		// get the next request without removing it from the queue
 		nextRequest := s.requestsQueue.peek()
@@ -113,6 +114,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 		case <-s.quitCh:
 			return
 		default:
+			continue
 		}
 
 	}
@@ -175,6 +177,11 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 		// increment the height to scan
 		// if nothing was found, we can just continue with same batch and next height
 		nextHeight++
+
+		chainTip, err = s.headerDB.ChainTip()
+		if err != nil {
+			return err
+		}
 	}
 
 	// enqueue the remaining requests
@@ -188,6 +195,9 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 func (s *scannerService) blockFilterMatches(items [][]byte, blockHash *chainhash.Hash) (bool, error) {
 	filter, err := s.filterDB.FetchFilter(blockHash, repository.RegularFilter)
 	if err != nil {
+		if err == repository.ErrFilterNotFound {
+			return false, nil
+		}
 		return false, err
 	}
 
@@ -203,6 +213,10 @@ func (s *scannerService) blockFilterMatches(items [][]byte, blockHash *chainhash
 func (s *scannerService) extractBlockMatches(blockHash *chainhash.Hash, requests []*ScanRequest) ([]Report, []*ScanRequest, error) {
 	block, err := s.blockService.GetBlock(blockHash)
 	if err != nil {
+		if err == blockservice.ErrorBlockNotFound {
+			return nil, requests, nil // skip requests if block svc is not able to find the block
+		}
+
 		return nil, nil, err
 	}
 
