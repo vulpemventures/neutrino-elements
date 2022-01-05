@@ -8,7 +8,7 @@ neutrino-elements uses Compact Block Filter (BIP0158) to implement a light clien
 
 Two services are provided, they can work independantly:
 - `NodeService` is a full node maintaining an up-to-date state of the block headers + compact filters. The NodeService writes down headers and filters in repositories.
-- `UtxoScanner` uses filters and headers repositories to handle `ScanRequest` which aims to know if an outpoint (identified by its script) is spent or not. 
+- `ScannerService` uses filters and headers repositories to handle `ScanRequest` which aims to know if an outpoint (identified by its script) is spent or not. 
 
 ## Getting Started
 

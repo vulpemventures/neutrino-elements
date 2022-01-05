@@ -8,6 +8,7 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 )
 
+// WatchItem is an interface containing the common methods using by Scanner to watch specific item.
 type WatchItem interface {
 	// Bytes returns the element search in the block filter
 	Bytes() []byte
