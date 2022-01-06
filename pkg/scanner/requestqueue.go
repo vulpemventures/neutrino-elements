@@ -26,7 +26,7 @@ func (queue *scanRequestQueue) dequeueAtHeight(height uint32) []*ScanRequest {
 	var remain []*ScanRequest   // remaining requests
 
 	for _, req := range queue.requests {
-		if req.startHeight == height {
+		if req.StartHeight == height {
 			selected = append(selected, req)
 		} else {
 			remain = append(remain, req)

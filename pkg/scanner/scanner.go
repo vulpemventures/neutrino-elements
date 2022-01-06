@@ -77,7 +77,7 @@ func (s *scannerService) Stop() error {
 }
 
 func (s *scannerService) Watch(opts ...ScanRequestOption) error {
-	req := NewScanRequest(opts...)
+	req := newScanRequest(opts...)
 	s.requestsQueue.enqueue(req)
 	return nil
 }
@@ -104,7 +104,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 
 		// get the next request without removing it from the queue
 		nextRequest := s.requestsQueue.peek()
-		err := s.requestWorker(nextRequest.startHeight, ch)
+		err := s.requestWorker(nextRequest.StartHeight, ch)
 		if err != nil {
 			logrus.Errorf("error while scanning: %v", err)
 		}
@@ -138,7 +138,7 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 
 		itemsBytes := make([][]byte, len(nextBatch))
 		for i, req := range nextBatch {
-			itemsBytes[i] = req.item.Bytes()
+			itemsBytes[i] = req.Item.Bytes()
 		}
 
 		// get the block hash for height
@@ -227,7 +227,7 @@ func (s *scannerService) extractBlockMatches(blockHash *chainhash.Hash, requests
 	for _, req := range requests {
 		reqMatchedAtLeastOneTime := false
 		for _, tx := range block.TransactionsData.Transactions {
-			if req.item.Match(tx) {
+			if req.Item.Match(tx) {
 				reqMatchedAtLeastOneTime = true
 				results = append(results, Report{
 					Transaction: tx,
