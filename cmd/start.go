@@ -60,7 +60,7 @@ func startAction(state *State) cli.ActionFunc {
 
 		// let's send the request to the scanner after 10sec
 		time.Sleep(time.Second * 3)
-		err = scanSvc.Watch(
+		scanSvc.Watch(
 			scanner.WithStartBlock(1),
 			scanner.WithWatchItem(watchItem),
 		)

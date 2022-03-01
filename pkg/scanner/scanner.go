@@ -25,8 +25,8 @@ type ScannerService interface {
 	// Start runs a go-routine in order to handle incoming requests via Watch
 	Start() (<-chan Report, error)
 	// Stop the scanner
-	Stop() error
-	Watch(...ScanRequestOption) error
+	Stop()
+	Watch(...ScanRequestOption)
 }
 
 type scannerService struct {
@@ -71,16 +71,14 @@ func (s *scannerService) Start() (<-chan Report, error) {
 	return resultCh, nil
 }
 
-func (s *scannerService) Stop() error {
+func (s *scannerService) Stop() {
 	s.quitCh <- struct{}{}
 	s.started = false
-	return nil
 }
 
-func (s *scannerService) Watch(opts ...ScanRequestOption) error {
+func (s *scannerService) Watch(opts ...ScanRequestOption) {
 	req := newScanRequest(opts...)
 	s.requestsQueue.enqueue(req)
-	return nil
 }
 
 // requestsManager is responsible to resolve the requests that are waiting for in the queue.
