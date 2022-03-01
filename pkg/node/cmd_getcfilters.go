@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
-	"golang.org/x/net/context"
 )
 
 func (n node) handleGetCFilters(header *protocol.MessageHeader, p peer.Peer) error {
@@ -29,7 +29,7 @@ func (n node) handleGetCFilters(header *protocol.MessageHeader, p peer.Peer) err
 		return err
 	}
 
-	endBlockHeader, err := n.blockHeadersDb.GetBlockHeader(*stopHash)
+	endBlockHeader, err := n.blockHeadersDb.GetBlockHeader(context.Background(), *stopHash)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func (n node) handleGetCFilters(header *protocol.MessageHeader, p peer.Peer) err
 	}
 
 	for height := endBlockHeader.Height; height > getCFilters.StartHeight; height-- {
-		blockHash, err := n.blockHeadersDb.GetBlockHashByHeight(height)
+		blockHash, err := n.blockHeadersDb.GetBlockHashByHeight(context.Background(), height)
 		if err != nil {
 			logrus.Error(err)
 			continue
@@ -59,10 +59,16 @@ func (n node) handleGetCFilters(header *protocol.MessageHeader, p peer.Peer) err
 			continue
 		}
 
+		gcsFilter, err := filter.GcsFilter()
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+
 		msgCFilter, err := protocol.NewMsgCFilter(
 			n.Network,
 			blockHash,
-			filter,
+			gcsFilter,
 		)
 		if err != nil {
 			logrus.Error(err)

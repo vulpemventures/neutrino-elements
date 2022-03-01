@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"io"
 
 	"github.com/sirupsen/logrus"
@@ -13,7 +14,7 @@ import (
 func (no node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	var block protocol.MsgBlock
 
-	currentChainTip, err := no.blockHeadersDb.ChainTip()
+	currentChainTip, err := no.blockHeadersDb.ChainTip(context.Background())
 	if err != nil && err != repository.ErrNoBlocksHeaders {
 		return err
 	}

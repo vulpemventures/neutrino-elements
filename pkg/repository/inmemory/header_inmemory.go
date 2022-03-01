@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"context"
 	"sync"
 
 	"github.com/btcsuite/btcd/blockchain"
@@ -16,16 +17,14 @@ type headerInmemory struct {
 	locker  *sync.RWMutex
 }
 
-var _ repository.BlockHeaderRepository = (*headerInmemory)(nil)
-
-func NewHeaderInmemory() *headerInmemory {
+func NewHeaderInmemory() repository.BlockHeaderRepository {
 	return &headerInmemory{
 		headers: make(map[chainhash.Hash]*block.Header),
 		locker:  new(sync.RWMutex),
 	}
 }
 
-func (h *headerInmemory) ChainTip() (*block.Header, error) {
+func (h *headerInmemory) ChainTip(context.Context) (*block.Header, error) {
 	h.locker.RLock()
 	defer h.locker.RUnlock()
 
@@ -43,7 +42,7 @@ func (h *headerInmemory) ChainTip() (*block.Header, error) {
 	return tip, nil
 }
 
-func (h *headerInmemory) GetBlockHeader(hash chainhash.Hash) (*block.Header, error) {
+func (h *headerInmemory) GetBlockHeader(_ context.Context, hash chainhash.Hash) (*block.Header, error) {
 	h.locker.RLock()
 	defer h.locker.RUnlock()
 
@@ -55,7 +54,7 @@ func (h *headerInmemory) GetBlockHeader(hash chainhash.Hash) (*block.Header, err
 	return blockHeader, nil
 }
 
-func (h *headerInmemory) GetBlockHashByHeight(height uint32) (*chainhash.Hash, error) {
+func (h *headerInmemory) GetBlockHashByHeight(_ context.Context, height uint32) (*chainhash.Hash, error) {
 	blockHeader, err := h.getBlockHeaderByHeight(height)
 	if err != nil {
 		return nil, err
@@ -69,7 +68,7 @@ func (h *headerInmemory) GetBlockHashByHeight(height uint32) (*chainhash.Hash, e
 	return &hash, nil
 }
 
-func (h *headerInmemory) WriteHeaders(headers ...block.Header) error {
+func (h *headerInmemory) WriteHeaders(_ context.Context, headers ...block.Header) error {
 	h.locker.Lock()
 	defer h.locker.Unlock()
 
@@ -85,8 +84,8 @@ func (h *headerInmemory) WriteHeaders(headers ...block.Header) error {
 	return nil
 }
 
-func (h *headerInmemory) LatestBlockLocator() (blockchain.BlockLocator, error) {
-	tip, err := h.ChainTip()
+func (h *headerInmemory) LatestBlockLocator(ctx context.Context) (blockchain.BlockLocator, error) {
+	tip, err := h.ChainTip(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +156,7 @@ func (h *headerInmemory) blockLocatorFromHash(chainTip *block.Header) (blockchai
 	return locator, nil
 }
 
-func (h *headerInmemory) HasAllAncestors(hash chainhash.Hash) (bool, error) {
+func (h *headerInmemory) HasAllAncestors(_ context.Context, hash chainhash.Hash) (bool, error) {
 	h.locker.RLock()
 	defer h.locker.RUnlock()
 

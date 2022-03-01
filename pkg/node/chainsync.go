@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/btcsuite/btcd/blockchain"
@@ -18,7 +19,7 @@ var zeroHash [32]byte = [32]byte{
 }
 
 func (no *node) isSync() (bool, error) {
-	chainTip, err := no.blockHeadersDb.ChainTip()
+	chainTip, err := no.blockHeadersDb.ChainTip(context.Background())
 	if err != nil {
 		return false, err
 	}
@@ -32,7 +33,7 @@ func (no *node) isSync() (bool, error) {
 		return false, err
 	}
 
-	tipHasAllAncestors, err := no.blockHeadersDb.HasAllAncestors(tipHash)
+	tipHasAllAncestors, err := no.blockHeadersDb.HasAllAncestors(context.Background(), tipHash)
 	if err != nil {
 		return false, err
 	}
@@ -52,7 +53,7 @@ func (no *node) syncWithPeer(peerID peer.PeerID) error {
 		return fmt.Errorf("peer %s not found", peerID)
 	}
 
-	locator, err := no.blockHeadersDb.LatestBlockLocator()
+	locator, err := no.blockHeadersDb.LatestBlockLocator(context.Background())
 	if err != nil {
 		genesisHash, err := no.getGenesisBlockHash()
 		if err != nil {

@@ -128,7 +128,7 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 	nextBatch := make([]*ScanRequest, 0)
 	nextHeight := startHeight
 
-	chainTip, err := s.headerDB.ChainTip()
+	chainTip, err := s.headerDB.ChainTip(context.Background())
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 		if nextHeight == 0 {
 			blockHash = s.genesisHash
 		} else {
-			blockHash, err = s.headerDB.GetBlockHashByHeight(nextHeight)
+			blockHash, err = s.headerDB.GetBlockHashByHeight(context.Background(), nextHeight)
 			if err != nil {
 				return err
 			}
@@ -179,7 +179,7 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 		// if nothing was found, we can just continue with same batch and next height
 		nextHeight++
 
-		chainTip, err = s.headerDB.ChainTip()
+		chainTip, err = s.headerDB.ChainTip(context.Background())
 		if err != nil {
 			return err
 		}

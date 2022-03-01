@@ -289,7 +289,7 @@ func (no *node) monitorBlockHeaders() {
 		case <-no.quit:
 			return
 		case newHeader := <-no.blockHeadersCh:
-			err := no.blockHeadersDb.WriteHeaders(newHeader)
+			err := no.blockHeadersDb.WriteHeaders(context.Background(), newHeader)
 			if err != nil {
 				logrus.Error(err)
 				continue
