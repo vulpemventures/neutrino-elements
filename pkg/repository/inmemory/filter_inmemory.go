@@ -1,54 +1,50 @@
 package inmemory
 
 import (
+	"context"
+	"encoding/hex"
 	"sync"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil/gcs"
-	"github.com/btcsuite/btcutil/gcs/builder"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
+
+func makeUniqueKey(key repository.FilterKey) string {
+	return hex.EncodeToString(append(key.BlockHash, byte(key.FilterType)))
+}
 
 type FilterInmemory struct {
 	filtersByHash map[string][]byte
 	locker        *sync.RWMutex
 }
 
-var _ repository.FilterRepository = (*FilterInmemory)(nil)
-
-func NewFilterInmemory() *FilterInmemory {
+func NewFilterInmemory() repository.FilterRepository {
 	return &FilterInmemory{
 		filtersByHash: make(map[string][]byte),
 		locker:        new(sync.RWMutex),
 	}
 }
 
-func (f *FilterInmemory) PutFilter(blockHash *chainhash.Hash, filter *gcs.Filter, filterType repository.FilterType) error {
+func (f *FilterInmemory) PutFilter(_ context.Context, entry *repository.FilterEntry) error {
 	f.locker.Lock()
 	defer f.locker.Unlock()
 
-	filterBytes, err := filter.NBytes()
-	if err != nil {
-		return err
-	}
-
-	f.filtersByHash[blockHash.String()] = filterBytes
+	key := makeUniqueKey(entry.Key)
+	f.filtersByHash[key] = entry.NBytes
 	return nil
 }
 
-func (f *FilterInmemory) FetchFilter(blockHash *chainhash.Hash, filterType repository.FilterType) (*gcs.Filter, error) {
+func (f *FilterInmemory) GetFilter(_ context.Context, key repository.FilterKey) (*repository.FilterEntry, error) {
 	f.locker.RLock()
 	defer f.locker.RUnlock()
 
-	filter, ok := f.filtersByHash[blockHash.String()]
+	k := makeUniqueKey(key)
+	filter, ok := f.filtersByHash[k]
 	if !ok {
 		return nil, repository.ErrFilterNotFound
 	}
 
-	gcsFilter, err := gcs.FromNBytes(builder.DefaultP, builder.DefaultM, filter)
-	if err != nil {
-		return nil, err
-	}
-
-	return gcsFilter, nil
+	return &repository.FilterEntry{
+		Key:    key,
+		NBytes: filter,
+	}, nil
 }

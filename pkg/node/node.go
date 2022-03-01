@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 
@@ -331,7 +332,16 @@ func (no *node) monitorCFilters() {
 		case <-no.quit:
 			return
 		case newCFilterMsg := <-no.compactFiltersCh:
-			err := no.filtersDb.PutFilter(newCFilterMsg.BlockHash, newCFilterMsg.Filter, repository.RegularFilter)
+			entry, err := repository.NewFilterEntry(repository.FilterKey{
+				FilterType: repository.FilterType(newCFilterMsg.FilterType),
+				BlockHash:  newCFilterMsg.BlockHash.CloneBytes(),
+			}, newCFilterMsg.Filter)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+
+			err = no.filtersDb.PutFilter(context.Background(), entry)
 			if err != nil {
 				logrus.Error(err)
 				continue

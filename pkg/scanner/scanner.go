@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -193,7 +194,12 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 }
 
 func (s *scannerService) blockFilterMatches(items [][]byte, blockHash *chainhash.Hash) (bool, error) {
-	filter, err := s.filterDB.FetchFilter(blockHash, repository.RegularFilter)
+	filterToFetchKey := repository.FilterKey{
+		BlockHash:  blockHash.CloneBytes(),
+		FilterType: repository.RegularFilter,
+	}
+
+	filter, err := s.filterDB.GetFilter(context.Background(), filterToFetchKey)
 	if err != nil {
 		if err == repository.ErrFilterNotFound {
 			return false, nil
@@ -201,8 +207,13 @@ func (s *scannerService) blockFilterMatches(items [][]byte, blockHash *chainhash
 		return false, err
 	}
 
+	gcsFilter, err := filter.GcsFilter()
+	if err != nil {
+		return false, err
+	}
+
 	key := builder.DeriveKey(blockHash)
-	matched, err := filter.MatchAny(key, items)
+	matched, err := gcsFilter.MatchAny(key, items)
 	if err != nil {
 		return false, err
 	}

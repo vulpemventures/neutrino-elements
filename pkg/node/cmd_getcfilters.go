@@ -10,6 +10,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+	"golang.org/x/net/context"
 )
 
 func (n node) handleGetCFilters(header *protocol.MessageHeader, p peer.Peer) error {
@@ -48,7 +49,11 @@ func (n node) handleGetCFilters(header *protocol.MessageHeader, p peer.Peer) err
 			continue
 		}
 
-		filter, err := n.filtersDb.FetchFilter(blockHash, repository.RegularFilter)
+		filter, err := n.filtersDb.GetFilter(
+			context.Background(), repository.FilterKey{
+				BlockHash:  blockHash.CloneBytes(),
+				FilterType: repository.RegularFilter,
+			})
 		if err != nil {
 			logrus.Error(err)
 			continue
