@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 
+	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/gcs"
 	"github.com/btcsuite/btcutil/gcs/builder"
 )
@@ -20,6 +22,11 @@ const (
 type FilterKey struct {
 	BlockHash  []byte
 	FilterType FilterType
+}
+
+func (k FilterKey) String() string {
+	hashedKey := btcutil.Hash160(append(k.BlockHash, byte(k.FilterType)))
+	return hex.EncodeToString(hashedKey[:6])
 }
 
 // FilterEntry is the base filter structure using to strore filter data.

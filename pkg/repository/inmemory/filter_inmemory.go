@@ -2,15 +2,10 @@ package inmemory
 
 import (
 	"context"
-	"encoding/hex"
 	"sync"
 
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
-
-func makeUniqueKey(key repository.FilterKey) string {
-	return hex.EncodeToString(append(key.BlockHash, byte(key.FilterType)))
-}
 
 type FilterInmemory struct {
 	filtersByHash map[string][]byte
@@ -28,8 +23,7 @@ func (f *FilterInmemory) PutFilter(_ context.Context, entry *repository.FilterEn
 	f.locker.Lock()
 	defer f.locker.Unlock()
 
-	key := makeUniqueKey(entry.Key)
-	f.filtersByHash[key] = entry.NBytes
+	f.filtersByHash[entry.Key.String()] = entry.NBytes
 	return nil
 }
 
@@ -37,8 +31,7 @@ func (f *FilterInmemory) GetFilter(_ context.Context, key repository.FilterKey) 
 	f.locker.RLock()
 	defer f.locker.RUnlock()
 
-	k := makeUniqueKey(key)
-	filter, ok := f.filtersByHash[k]
+	filter, ok := f.filtersByHash[key.String()]
 	if !ok {
 		return nil, repository.ErrFilterNotFound
 	}
