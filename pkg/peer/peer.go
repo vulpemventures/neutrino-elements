@@ -1,13 +1,20 @@
 package peer
 
 import (
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/vulpemventures/go-elements/block"
+	"io"
+
+	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
+// PeerID is peer IP address.
+type PeerID string
+
+// Peer describes a network's node.
 type Peer interface {
-	GetBestBlockHeader() (*block.Header, error)
-	GetBlockHeaderByHeight(height uint32) (*block.Header, error)
-	GetCFilter(chainhash.Hash, wire.FilterType) (*chainhash.Hash, error)
+	// ID returns peer ID. Must be unique in the network.
+	ID() PeerID
+	// Connection returns peer connection, using to send and receive Elements messages.
+	Connection() io.ReadWriteCloser
+	// Returns the Network Address of the peer
+	Addr() *protocol.Addr
 }

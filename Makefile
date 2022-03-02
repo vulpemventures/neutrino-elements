@@ -8,3 +8,14 @@ fmt:
 	@echo "Gofmt..."
 	@gofmt -w -l .
 
+test:
+	@echo "Testing..."
+	@go test -v ./...
+
+clean:
+	@echo "Cleaning..."
+	@rm -rf ./bin
+
+build:
+	@echo "Building..."
+	@go build -v -o bin/neutrinoelements-cli ./cmd
