@@ -40,9 +40,15 @@ func main() {
 			Usage: "watch for an address using utxo scanner",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:    "address",
-					Usage:   "address to watch",
-					Aliases: []string{"a"},
+					Name:     "address",
+					Usage:    "address to watch",
+					Aliases:  []string{"a"},
+					Required: true,
+				},
+				&cli.StringSliceFlag{
+					Name:     "peers",
+					Usage:    "list of peers to connect to",
+					Required: true,
 				},
 			},
 			Action: startAction(state),
