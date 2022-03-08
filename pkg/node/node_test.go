@@ -1,7 +1,6 @@
 package node_test
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -110,9 +109,8 @@ func TestSendTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(time.Second * 5)
-	log.Println(broadcastedtxid)
-	_, err = esploraSvc.GetTransactionHex(broadcastedtxid)
+	time.Sleep(time.Second * 5)                            // wait for tx propagation
+	_, err = esploraSvc.GetTransactionHex(broadcastedtxid) // check if we can get the tx from esplora
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -110,7 +110,7 @@ func (h *headerInmemory) blockLocatorFromHash(chainTip *block.Header) (blockchai
 	var locator blockchain.BlockLocator
 
 	if chainTip == nil {
-		return nil, repository.ErrNoBlocksHeaders
+		return nil, repository.ErrBlockNotFound
 	}
 
 	hash, err := chainTip.Hash()
