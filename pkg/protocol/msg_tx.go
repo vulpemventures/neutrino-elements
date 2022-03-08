@@ -15,6 +15,15 @@ type MsgTx struct {
 	transaction.Transaction
 }
 
+func NewMsgTxFromHex(hex string) (MsgTx, error) {
+	tx, err := transaction.NewTxFromHex(hex)
+	if err != nil {
+		return MsgTx{}, err
+	}
+
+	return MsgTx{*tx}, nil
+}
+
 // Hash returns transaction ID.
 func (tx MsgTx) Hash() ([]byte, error) {
 	serialized, err := tx.MarshalBinary()
