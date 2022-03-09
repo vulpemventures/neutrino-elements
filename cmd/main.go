@@ -46,8 +46,8 @@ func main() {
 					Required: true,
 				},
 				&cli.StringSliceFlag{
-					Name:     "peers",
-					Usage:    "list of peers to connect to",
+					Name:     "connect",
+					Usage:    "list of host:port to connect to",
 					Required: true,
 				},
 			},
