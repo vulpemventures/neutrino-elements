@@ -23,6 +23,7 @@ type NodeService interface {
 	Start(initialOutboundPeerAddr string) error
 	Stop() error
 	AddOutboundPeer(peer.Peer) error
+	SendTransaction(txhex string) error
 }
 
 // node implements an Elements full node.
@@ -348,4 +349,25 @@ func (no *node) monitorCFilters() {
 			}
 		}
 	}
+}
+
+func (no *node) SendTransaction(txhex string) error {
+	msgTx, err := protocol.NewMsgTxFromHex(txhex)
+	if err != nil {
+		return err
+	}
+
+	msg, err := protocol.NewMessage("tx", no.Network, &msgTx)
+	if err != nil {
+		return err
+	}
+
+	for _, peer := range no.Peers {
+		err = no.sendMessage(peer.Connection(), msg)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
