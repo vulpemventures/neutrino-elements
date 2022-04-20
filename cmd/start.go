@@ -17,7 +17,7 @@ import (
 
 func startAction(state *State) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		peers := c.StringSlice("peers")
+		peers := c.StringSlice("connect")
 		if len(peers) == 0 {
 			return cli.Exit("peers must be specified", 1)
 		}

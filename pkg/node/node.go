@@ -16,7 +16,7 @@ import (
 
 const (
 	pingIntervalSec = 120
-	pingTimeoutSec  = 30
+	pingTimeoutSec  = 60
 )
 
 type NodeService interface {
