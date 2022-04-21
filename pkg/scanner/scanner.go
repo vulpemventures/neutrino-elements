@@ -174,7 +174,7 @@ func (s *scannerService) requestWorker(startHeight uint32, reportsChan chan<- Re
 
 				// if the request is persistent, the scanner will keep watching the item at the next block height
 				if report.Request.IsPersistent {
-					s.Watch(WithStartBlock(report.BlockHeight+1), WithWatchItem(report.Request.Item), WithPersistent())
+					s.Watch(WithStartBlock(report.BlockHeight+1), WithWatchItem(report.Request.Item), WithPersistentWatch())
 				}
 			}
 

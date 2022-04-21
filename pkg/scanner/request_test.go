@@ -59,8 +59,8 @@ func TestRequestOptions(t *testing.T) {
 			},
 		},
 		{
-			name:   "WithPersistent",
-			option: scanner.WithPersistent(),
+			name:   "WithPersistentWatch",
+			option: scanner.WithPersistentWatch(),
 			expected: scanner.ScanRequest{
 				Item:         initialWatchItem,
 				StartHeight:  0,

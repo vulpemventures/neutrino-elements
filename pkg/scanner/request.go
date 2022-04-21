@@ -20,18 +20,14 @@ func WithStartBlock(blockHeight uint32) ScanRequestOption {
 	}
 }
 
-func WithPersistent() ScanRequestOption {
+func WithPersistentWatch() ScanRequestOption {
 	return func(req *ScanRequest) {
 		req.IsPersistent = true
 	}
 }
 
 func newScanRequest(options ...ScanRequestOption) *ScanRequest {
-	req := &ScanRequest{
-		Item:         nil,
-		StartHeight:  0,
-		IsPersistent: false,
-	}
+	req := &ScanRequest{}
 	for _, option := range options {
 		option(req)
 	}

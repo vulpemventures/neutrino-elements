@@ -107,7 +107,7 @@ func TestWatchPersistent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.Watch(scanner.WithStartBlock(tip.Height+1), scanner.WithWatchItem(watchItem), scanner.WithPersistent())
+	s.Watch(scanner.WithStartBlock(tip.Height+1), scanner.WithWatchItem(watchItem), scanner.WithPersistentWatch())
 	txid, err := faucet(address)
 	if err != nil {
 		t.Fatal(err)

@@ -82,7 +82,7 @@ func startAction(state *State) cli.ActionFunc {
 		scanSvc.Watch(
 			scanner.WithStartBlock(0),
 			scanner.WithWatchItem(watchItem),
-			scanner.WithPersistent(),
+			scanner.WithPersistentWatch(),
 		)
 		if err != nil {
 			panic(err)
