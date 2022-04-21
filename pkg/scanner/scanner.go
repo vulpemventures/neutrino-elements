@@ -78,6 +78,7 @@ func (s *scannerService) Start() (<-chan Report, error) {
 func (s *scannerService) Stop() {
 	s.quitCh <- struct{}{}
 	s.started = false
+	s.requestsQueue = newScanRequestQueue()
 }
 
 func (s *scannerService) Watch(opts ...ScanRequestOption) {
