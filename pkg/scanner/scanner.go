@@ -19,6 +19,9 @@ type Report struct {
 	// BlockHash is the block hash of the block that includes the transaction.
 	BlockHash   *chainhash.Hash
 	BlockHeight uint32
+
+	// the request resolved by the report
+	Request *ScanRequest
 }
 
 type ScannerService interface {
@@ -26,6 +29,7 @@ type ScannerService interface {
 	Start() (<-chan Report, error)
 	// Stop the scanner
 	Stop()
+	// Add a new request to the queue
 	Watch(...ScanRequestOption)
 }
 
@@ -74,6 +78,7 @@ func (s *scannerService) Start() (<-chan Report, error) {
 func (s *scannerService) Stop() {
 	s.quitCh <- struct{}{}
 	s.started = false
+	s.requestsQueue = newScanRequestQueue()
 }
 
 func (s *scannerService) Watch(opts ...ScanRequestOption) {
@@ -122,7 +127,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 // will check if any blocks has the requested item
 // if yes, will extract the transaction that match the item
 // TODO handle properly errors (enqueue the unresolved requests ??)
-func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) error {
+func (s *scannerService) requestWorker(startHeight uint32, reportsChan chan<- Report) error {
 	nextBatch := make([]*ScanRequest, 0)
 	nextHeight := startHeight
 
@@ -163,9 +168,14 @@ func (s *scannerService) requestWorker(startHeight uint32, ch chan<- Report) err
 				return err
 			}
 
-			// if some requests generate a report, send them to the channel
 			for _, report := range reports {
-				ch <- report
+				// send the report to the output channel
+				reportsChan <- report
+
+				// if the request is persistent, the scanner will keep watching the item at the next block height
+				if report.Request.IsPersistent {
+					s.Watch(WithStartBlock(report.BlockHeight+1), WithWatchItem(report.Request.Item), WithPersistentWatch())
+				}
 			}
 
 			// if some requests remain, put them back in the next batch
@@ -242,6 +252,7 @@ func (s *scannerService) extractBlockMatches(blockHash *chainhash.Hash, requests
 					Transaction: tx,
 					BlockHash:   blockHash,
 					BlockHeight: block.Header.Height,
+					Request:     req,
 				})
 			}
 		}

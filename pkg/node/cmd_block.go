@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
@@ -14,13 +13,9 @@ import (
 func (no node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	var block protocol.MsgBlock
 
-	currentChainTip, err := no.blockHeadersDb.ChainTip(context.Background())
+	_, err := no.blockHeadersDb.ChainTip(context.Background())
 	if err != nil && err != repository.ErrNoBlocksHeaders {
 		return err
-	}
-
-	if currentChainTip != nil {
-		logrus.Println(currentChainTip.Height)
 	}
 
 	lr := io.LimitReader(p.Connection(), int64(header.Length))

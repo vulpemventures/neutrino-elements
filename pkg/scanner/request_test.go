@@ -45,15 +45,26 @@ func TestRequestOptions(t *testing.T) {
 				Item: &fakeWatchItem{
 					bytes: []byte("fake"),
 				},
-				StartHeight: 0,
+				StartHeight:  0,
+				IsPersistent: false,
 			},
 		},
 		{
 			name:   "WithStartBlock",
 			option: scanner.WithStartBlock(666),
 			expected: scanner.ScanRequest{
-				Item:        initialWatchItem,
-				StartHeight: 666,
+				Item:         initialWatchItem,
+				StartHeight:  666,
+				IsPersistent: false,
+			},
+		},
+		{
+			name:   "WithPersistentWatch",
+			option: scanner.WithPersistentWatch(),
+			expected: scanner.ScanRequest{
+				Item:         initialWatchItem,
+				StartHeight:  0,
+				IsPersistent: true,
 			},
 		},
 	}

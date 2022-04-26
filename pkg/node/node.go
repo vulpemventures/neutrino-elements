@@ -16,7 +16,7 @@ import (
 
 const (
 	pingIntervalSec = 120
-	pingTimeoutSec  = 30
+	pingTimeoutSec  = 60
 )
 
 type NodeService interface {
@@ -24,6 +24,7 @@ type NodeService interface {
 	Stop() error
 	AddOutboundPeer(peer.Peer) error
 	SendTransaction(txhex string) error
+	GetChainTip() (*block.Header, error)
 }
 
 // node implements an Elements full node.
@@ -77,6 +78,10 @@ func New(config NodeConfig) (NodeService, error) {
 		blockHeadersDb:   config.BlockHeadersDB,
 		quit:             make(chan struct{}),
 	}, nil
+}
+
+func (no node) GetChainTip() (*block.Header, error) {
+	return no.blockHeadersDb.ChainTip(context.Background())
 }
 
 // AddOutboundPeer sends a new version message to a new peer
