@@ -23,6 +23,8 @@ func (no node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 		return err
 	}
 
+	go no.memPool.CheckTxConfirmed(block.Block)
+
 	no.blockHeadersCh <- *block.Header
 
 	return nil
