@@ -133,8 +133,8 @@ func (no node) Start(initialOutboundPeerAddr string) error {
 }
 
 func (no *node) Stop() error {
-	close(no.quit)
 	no.memPool.Stop()
+	close(no.quit)
 	return nil
 }
 
