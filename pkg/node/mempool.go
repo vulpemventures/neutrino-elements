@@ -13,7 +13,6 @@ import (
 
 const (
 	TxConfirmed TxEventType = iota
-	TxRejected
 	TxUnConfirmed
 )
 
@@ -28,30 +27,19 @@ type MemPool struct {
 	//txLock is a mutex to protect the txs map
 	txsMutex *sync.RWMutex
 
-	//memPoolExpireTimeout is the time after which a transaction is removed from the memPool
-	//if it has not been confirmed, this is to protect against memPool spamming
-	memPoolExpireTimeout time.Duration
-
-	//expireTxInterval is the interval at which the memPool is checked for expired transactions
-	expireTxInterval time.Duration
-
 	//txSubscribers is a list of subscribers listening for new transactions
 	txSubscribers []txSubscriber
 }
 
 func NewMemPool(
-	memPoolExpireTimeout time.Duration,
-	expireTxInterval time.Duration,
 	logLevel log.Level,
 ) MemPool {
 	log.SetLevel(logLevel)
 	return MemPool{
-		txChan:               make(chan protocol.MsgTx),
-		txs:                  make(map[string]txData),
-		quitChan:             make(chan struct{}),
-		txsMutex:             new(sync.RWMutex),
-		memPoolExpireTimeout: memPoolExpireTimeout,
-		expireTxInterval:     expireTxInterval,
+		txChan:   make(chan protocol.MsgTx),
+		txs:      make(map[string]txData),
+		quitChan: make(chan struct{}),
+		txsMutex: new(sync.RWMutex),
 	}
 }
 
@@ -72,19 +60,6 @@ func (t TxConfirmedEvent) Type() TxEventType {
 }
 
 func (t TxConfirmedEvent) TxID() string {
-	return t.txID
-}
-
-type TxRejectedEvent struct {
-	txID string
-	tx   transaction.Transaction
-}
-
-func (t TxRejectedEvent) Type() TxEventType {
-	return TxRejected
-}
-
-func (t TxRejectedEvent) TxID() string {
 	return t.txID
 }
 
@@ -112,9 +87,8 @@ type txSubscriber struct {
 }
 
 func (m *MemPool) Start() {
-	go m.monitorForStalledTxs()
-	go m.listenForNewTxs()
 	log.Infoln("memPool started")
+	go m.listenForNewTxs()
 }
 
 func (m *MemPool) Stop() {
@@ -152,7 +126,10 @@ func (m *MemPool) AddSubscriber(id string) <-chan TxEvent {
 }
 
 func (m *MemPool) CheckTxConfirmed(block block.Block) {
-	m.txsMutex.Lock()
+	go m.checkTxConfirmed(block)
+}
+
+func (m *MemPool) checkTxConfirmed(block block.Block) {
 	//TODO: check if this is the best way to do this
 	for _, v := range m.txs {
 		for _, tx := range block.TransactionsData.Transactions {
@@ -220,30 +197,5 @@ func (m *MemPool) notifySubscribers(txEvent TxEvent) {
 			subscriber.txEvent <- txEvent
 			log.Debugf("notifying subscriber %s of new tx done", subscriber.id)
 		}(v)
-	}
-}
-
-func (m *MemPool) monitorForStalledTxs() {
-	for {
-		select {
-		case <-m.quitChan:
-			log.Infoln("memPool stale tx monitor stopped")
-			return
-
-		case <-time.After(m.expireTxInterval):
-			for txid, txData := range m.txs {
-				if time.Since(txData.timeReceived) > m.memPoolExpireTimeout {
-					log.Debugf("removing tx %s from memPool", txid)
-					if err := m.removeTxFromMemPool(txid); err != nil {
-						log.Errorf("failed to remove tx %s from memPool: %+v", txid, err)
-					}
-
-					m.notifySubscribers(TxRejectedEvent{
-						txID: txid,
-						tx:   txData.tx,
-					})
-				}
-			}
-		}
 	}
 }

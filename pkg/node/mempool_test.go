@@ -3,6 +3,7 @@ package node
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/vulpemventures/go-elements/block"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"strconv"
@@ -34,11 +35,8 @@ func TestNewMemPool(t *testing.T) {
 		}
 		txs = append(txs, *tx)
 	}
-	memPoolExpireTimeout := time.Second * 5
-	expireTxInterval := time.Second * 1
+
 	memPool := NewMemPool(
-		memPoolExpireTimeout,
-		expireTxInterval,
 		log.InfoLevel,
 	)
 
@@ -69,13 +67,22 @@ func TestNewMemPool(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	time.Sleep(time.Second * 1)
 	pool := memPool.GetMemPool()
-	assert.Equal(t, len(pool), 9)
+	assert.Equal(t, 9, len(pool))
 
-	// simulate that rest of txs are expired
-	time.Sleep(time.Second * 5)
+	memPool.CheckTxConfirmed(block.Block{
+		TransactionsData: &block.Transactions{
+			Transactions: []*transaction.Transaction{
+				&txs[1],
+				&txs[2],
+			},
+		},
+	})
+
+	time.Sleep(time.Second * 1)
 	pool = memPool.GetMemPool()
-	assert.Equal(t, len(pool), 0)
+	assert.Equal(t, 7, len(pool))
 
 	memPool.Stop()
 	time.Sleep(time.Second * 1)

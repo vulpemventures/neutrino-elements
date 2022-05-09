@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"time"
-
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/block"
@@ -14,14 +11,12 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+	"io"
 )
 
 const (
 	pingIntervalSec = 120
 	pingTimeoutSec  = 60
-
-	memPoolExpireTimeout = time.Minute * 5
-	expireTxInterval     = time.Minute * 1
 )
 
 type NodeService interface {
@@ -83,7 +78,7 @@ func New(config NodeConfig) (NodeService, error) {
 		blockHeadersCh:   make(chan block.Header),
 		filtersDb:        config.FiltersDB,
 		blockHeadersDb:   config.BlockHeadersDB,
-		memPool:          NewMemPool(memPoolExpireTimeout, expireTxInterval, log.InfoLevel),
+		memPool:          NewMemPool(log.InfoLevel),
 		quit:             make(chan struct{}),
 	}, nil
 }
