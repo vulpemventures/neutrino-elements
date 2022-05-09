@@ -87,11 +87,11 @@ func TestWatch(t *testing.T) {
 		t.Fatalf("expected txid %s, got %s", txid, nextReport.Transaction.TxHash().String())
 	}
 
-	time.Sleep(time.Second * 3)
 	s.Stop()
 	if err := n.Stop(); err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(time.Second * 3)
 }
 
 func TestWatchPersistent(t *testing.T) {
@@ -133,9 +133,9 @@ func TestWatchPersistent(t *testing.T) {
 		t.Fatalf("expected txid %s, got %s", txid, nextReport.Transaction.TxHash().String())
 	}
 
-	time.Sleep(time.Second * 3)
 	s.Stop()
 	if err := n.Stop(); err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(time.Second * 3)
 }
