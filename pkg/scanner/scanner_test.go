@@ -192,7 +192,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 
 	for _, v := range addresses {
 		go func(a string) {
-			_, err := testutil.Faucet(v)
+			_, err := testutil.Faucet(a)
 			if err != nil {
 				fmt.Println(err)
 			}
