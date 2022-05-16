@@ -164,8 +164,13 @@ func TestWalletDescriptorRange(t *testing.T) {
 			}
 		}
 
-		p2wpkh := payment.FromPublicKey(pubKey, &network.Regtest, nil)
-		addr, err := p2wpkh.WitnessPubKeyHash()
+		pk, err := btcec.NewPrivateKey(btcec.S256())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		p2wpkh := payment.FromPublicKey(pubKey, &network.Regtest, pk.PubKey())
+		addr, err := p2wpkh.ConfidentialWitnessPubKeyHash()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -192,12 +197,13 @@ func TestWalletDescriptorRange(t *testing.T) {
 	}
 
 	for _, v := range addresses {
-		go func(a string) {
-			_, err := testutil.Faucet(a)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}(v)
+		if err = testutil.SendToAddr(v); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err = testutil.GenerateToAddr(addresses[0]); err != nil {
+		t.Fatal(err)
 	}
 
 	i := 0
@@ -210,7 +216,7 @@ loop:
 				break loop
 			}
 			t.Log(r.Transaction.TxHash().String())
-		case <-time.After(time.Second * 30):
+		case <-time.After(time.Second * 5):
 			break loop
 		}
 	}
@@ -221,7 +227,6 @@ loop:
 	if err := n.Stop(); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(time.Second * 3)
 }
 
 func TestWalletDescriptorTestNet(t *testing.T) {

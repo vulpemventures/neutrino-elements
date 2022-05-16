@@ -19,6 +19,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -443,4 +444,31 @@ func GenerateMasterPrivateKey() (*hdkeychain.ExtendedKey, error) {
 	}
 
 	return privateKey, nil
+}
+
+func OutputCommand(name string, arg ...string) ([]byte, error) {
+	cmd := exec.Command(name, arg...)
+	b, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func SendToAddr(addr string) error {
+	_, err := OutputCommand("nigiri", "rpc", "--liquid", "sendtoaddress", addr, "0.01")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GenerateToAddr(addr string) error {
+	_, err := OutputCommand("nigiri", "rpc", "--liquid", "generatetoaddress", "1", addr)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
