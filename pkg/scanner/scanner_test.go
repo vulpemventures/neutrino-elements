@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
@@ -201,13 +202,26 @@ func TestWalletDescriptorRange(t *testing.T) {
 
 	i := 0
 loop:
-	for r := range reportCh {
-		i++
-		if i == 10 {
+	for {
+		select {
+		case r := <-reportCh:
+			i++
+			if i == 10 {
+				break loop
+			}
+			t.Log(r.Transaction.TxHash().String())
+		case <-time.After(time.Second * 30):
 			break loop
 		}
-		t.Log(r.Transaction.TxHash().String())
 	}
+
+	assert.Equal(t, 10, i)
+
+	s.Stop()
+	if err := n.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Second * 3)
 }
 
 func TestWalletDescriptorTestNet(t *testing.T) {
