@@ -265,4 +265,14 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 	for r := range reportCh {
 		t.Log(r.Transaction.TxHash().String())
 	}
+
+loop:
+	for {
+		select {
+		case r := <-reportCh:
+			t.Log(r.Transaction.TxHash().String())
+		case <-time.After(time.Second * 10):
+			break loop
+		}
+	}
 }
