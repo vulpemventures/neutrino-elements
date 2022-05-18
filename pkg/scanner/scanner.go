@@ -11,6 +11,8 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -78,8 +80,10 @@ func New(
 }
 
 func (s *scannerService) Start() (<-chan Report, error) {
+	log.Info("starting scanner")
+
 	if s.started {
-		return nil, fmt.Errorf("utxo scanner already started")
+		return nil, fmt.Errorf("scanner already started")
 	}
 
 	s.quitCh = make(chan struct{}, 1)
@@ -92,6 +96,8 @@ func (s *scannerService) Start() (<-chan Report, error) {
 }
 
 func (s *scannerService) Stop() {
+	log.Info("stopping scanner")
+
 	s.quitCh <- struct{}{}
 	s.started = false
 	s.requestsQueue = newScanRequestQueue()
@@ -146,6 +152,7 @@ func (s *scannerService) WatchDescriptorWallet(
 					WithWatchItem(&ScriptWatchItem{
 						outputScript: scripts[0].Script,
 					}),
+					WithPersistentWatch(),
 				)
 				if err != nil {
 					panic(err)

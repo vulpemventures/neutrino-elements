@@ -88,7 +88,7 @@ func (n *node) checkSync(p peer.Peer) {
 
 	isSync, _ := n.isSync()
 	if !isSync {
-		logrus.Infof("start sync block headers with peer: %s", p.ID())
+		logrus.Infof("node: start sync block headers with peer: %s", p.ID())
 		n.syncWithPeer(p.ID())
 	}
 }

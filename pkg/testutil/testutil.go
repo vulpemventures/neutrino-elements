@@ -19,6 +19,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -471,4 +472,28 @@ func GenerateToAddr(addr string) error {
 	}
 
 	return nil
+}
+
+func RunCommand(name string, arg ...string) error {
+	cmd, err := RunCommandDetached(name, arg...)
+	if err != nil {
+		return err
+	}
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("name: %v, args: %v, err: %v", name, arg, err.Error())
+	}
+
+	return nil
+}
+
+func RunCommandDetached(name string, arg ...string) (*exec.Cmd, error) {
+	cmd := exec.Command(name, arg...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err := cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("name: %v, args: %v, err: %v", name, arg, err.Error())
+	}
+	return cmd, nil
 }

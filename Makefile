@@ -19,3 +19,9 @@ clean:
 build:
 	@echo "Building..."
 	@go build -v -o bin/neutrinoelements-cli ./cmd
+
+## build neutrino daemon
+build-nd:
+	@echo "Building neutrino daemon..."
+	@export GO111MODULE=on; \
+	env go build -tags netgo -ldflags="-s -w" -o bin/neutrinod ./cmd/neutrinod/main.go
