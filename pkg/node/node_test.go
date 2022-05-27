@@ -1,116 +1,43 @@
 package node_test
 
 import (
+	"github.com/vulpemventures/neutrino-elements/pkg/node"
+	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 	"testing"
 	"time"
+)
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/tdex-network/tdex-daemon/pkg/bufferutil"
-	"github.com/vulpemventures/go-elements/address"
-	"github.com/vulpemventures/go-elements/elementsutil"
-	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/go-elements/pset"
-	"github.com/vulpemventures/go-elements/transaction"
+var (
+	peerAddr = "localhost:18886"
 )
 
 func TestSendTransaction(t *testing.T) {
-	nodeSvc, err := newTestNodeSvc()
+	nodeSvc, err := node.New(node.NodeConfig{
+		Network:        "nigiri",
+		UserAgent:      "neutrino-elements:0.0.1",
+		FiltersDB:      inmemory.NewFilterInmemory(),
+		BlockHeadersDB: inmemory.NewHeaderInmemory(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	nodeSvc.Start("localhost:18886")
+	if err := nodeSvc.Start(peerAddr); err != nil {
+		t.Fatal(err)
+	}
 
-	esploraSvc, err := newExplorerSvc()
+	txHex, txID, err := createTx()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	addr, privKey, err := newTestData()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	txid, err := esploraSvc.Faucet(addr, float64(1), "")
+	err = nodeSvc.SendTransaction(txHex)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(time.Second * 5)
-	txhex, err := esploraSvc.GetTransactionHex(txid)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	faucetTx, err := transaction.NewTxFromHex(txhex)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ptx, err := pset.New(nil, nil, 2, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	updater, err := pset.NewUpdater(ptx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	h, _ := chainhash.NewHashFromStr(txid)
-
-	updater.AddInput(&transaction.TxInput{
-		Hash:  h.CloneBytes(),
-		Index: 0,
-	})
-
-	err = updater.AddInNonWitnessUtxo(faucetTx, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	script, _ := address.ToOutputScript(addr)
-
-	lbtc, _ := bufferutil.AssetHashToBytes(network.Regtest.AssetID)
-	sats, _ := elementsutil.SatoshiToElementsValue(100000000 - 10000)
-	fees, _ := elementsutil.SatoshiToElementsValue(10000)
-
-	updater.AddOutput(&transaction.TxOutput{
-		Asset:  lbtc,
-		Value:  sats,
-		Script: script,
-		Nonce:  []byte{0x00},
-	})
-
-	updater.AddOutput(&transaction.TxOutput{
-		Asset:  lbtc,
-		Value:  fees,
-		Script: []byte{},
-		Nonce:  []byte{0x00},
-	})
-
-	err = signInput(ptx, 0, privKey, faucetTx.Outputs[0].Script, faucetTx.Outputs[0].Value)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	base64, err := ptx.ToBase64()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hex, broadcastedtxid, err := finalizeAndExtractTransaction(base64)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = nodeSvc.SendTransaction(hex)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	time.Sleep(time.Second * 5)                            // wait for tx propagation
-	_, err = esploraSvc.GetTransactionHex(broadcastedtxid) // check if we can get the tx from esplora
+	_, err = getTransactionHex(txID)
 	if err != nil {
 		t.Fatal(err)
 	}

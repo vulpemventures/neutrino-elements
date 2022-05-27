@@ -43,6 +43,10 @@ func (tx MsgTx) Hash() ([]byte, error) {
 	return txid, nil
 }
 
+func (tx MsgTx) HashStr() string {
+	return tx.TxHash().String()
+}
+
 // MarshalBinary implements binary.Marshaler interface.
 func (tx MsgTx) MarshalBinary() ([]byte, error) {
 	return tx.Serialize()

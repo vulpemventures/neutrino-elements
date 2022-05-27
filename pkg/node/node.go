@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/block"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+	"io"
 )
 
 const (
@@ -43,6 +43,8 @@ type node struct {
 	blockHeadersCh   chan block.Header
 	filtersDb        repository.FilterRepository
 	blockHeadersDb   repository.BlockHeaderRepository
+
+	memPool MemPool
 
 	quit chan struct{}
 }
@@ -76,6 +78,7 @@ func New(config NodeConfig) (NodeService, error) {
 		blockHeadersCh:   make(chan block.Header),
 		filtersDb:        config.FiltersDB,
 		blockHeadersDb:   config.BlockHeadersDB,
+		memPool:          NewMemPool(log.InfoLevel),
 		quit:             make(chan struct{}),
 	}, nil
 }
@@ -124,10 +127,13 @@ func (no node) Start(initialOutboundPeerAddr string) error {
 	go no.monitorBlockHeaders()
 	go no.monitorCFilters()
 
+	no.memPool.Start()
+
 	return nil
 }
 
 func (no *node) Stop() error {
+	no.memPool.Stop()
 	close(no.quit)
 	return nil
 }

@@ -64,8 +64,6 @@ func TestWatch(t *testing.T) {
 	const address = "el1qq0mjw2fwsc20vr4q2ypq9w7dslg6436zaahl083qehyghv7td3wnaawhrpxphtjlh4xjwm6mu29tp9uczkl8cxfyatqc3vgms"
 
 	n, s, reportCh := makeNigiriTestServices()
-	defer s.Stop()
-	defer n.Stop()
 
 	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
 	if err != nil {
@@ -88,14 +86,18 @@ func TestWatch(t *testing.T) {
 	if nextReport.Transaction.TxHash().String() != txid {
 		t.Fatalf("expected txid %s, got %s", txid, nextReport.Transaction.TxHash().String())
 	}
+
+	s.Stop()
+	if err := n.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Second * 3)
 }
 
 func TestWatchPersistent(t *testing.T) {
 	const address = "el1qqfs4ecf5427tyshnsq0x3jy3ad2tqfn03x3fqmxtyn2ycuvmk98urxmh9cdmr5zcqfs42l6a3kpyrk6pkxjx7yuvqsnuuckhp"
 
 	n, s, reportCh := makeNigiriTestServices()
-	defer s.Stop()
-	defer n.Stop()
 
 	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
 	if err != nil {
@@ -130,4 +132,10 @@ func TestWatchPersistent(t *testing.T) {
 	if nextReport.Transaction.TxHash().String() != txid {
 		t.Fatalf("expected txid %s, got %s", txid, nextReport.Transaction.TxHash().String())
 	}
+
+	s.Stop()
+	if err := n.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Second * 3)
 }
