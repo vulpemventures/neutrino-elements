@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -97,12 +98,14 @@ func (msg *MsgCFilter) UnmarshalBinary(r io.Reader) error {
 		return err
 	}
 
-	len, err := lenFilter.Int()
+	l, err := lenFilter.Int()
 	if err != nil {
 		return err
 	}
 
-	bytesFilter, err := d.DecodeBytes(int64(len))
+	logrus.Debugf("lenFilter: %d", l)
+
+	bytesFilter, err := d.DecodeBytes(int64(l))
 	if err != nil {
 		return err
 	}

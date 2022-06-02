@@ -8,7 +8,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 )
 
-func (no node) handleInv(header *protocol.MessageHeader, p peer.Peer) error {
+func (n node) handleInv(header *protocol.MessageHeader, p peer.Peer) error {
 	var inv protocol.MsgInv
 
 	conn := p.Connection()
@@ -21,7 +21,7 @@ func (no node) handleInv(header *protocol.MessageHeader, p peer.Peer) error {
 	getData.Inventory = inv.Inventory
 	getData.Count = inv.Count
 
-	getDataMsg, err := protocol.NewMessage("getdata", no.Network, getData)
+	getDataMsg, err := protocol.NewMessage("getdata", n.Network, getData)
 	if err != nil {
 		return err
 	}

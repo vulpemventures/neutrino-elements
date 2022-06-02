@@ -25,7 +25,7 @@ func (n *node) addPeer(peer peer.Peer) error {
 	n.peersPongCh[id] = make(chan uint64)
 
 	if len(n.Peers) == 1 {
-		n.checkSync(peer)
+		go n.sync(peer)
 	}
 
 	return nil
