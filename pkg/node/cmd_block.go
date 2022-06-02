@@ -41,6 +41,7 @@ func (n node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	if newBlockHeight != tip.Height+1 {
 		if newBlockHeight > p.StartBlockHeight() {
 			p.SetStartBlockHeight(newBlockHeight)
+			n.sync(p)
 		}
 
 		return nil

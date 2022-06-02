@@ -9,7 +9,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
-	"time"
 )
 
 var zeroHash [32]byte = [32]byte{
@@ -91,8 +90,6 @@ func (n *node) syncWithPeer(peerID peer.PeerID) error {
 }
 
 func (n *node) sync(p peer.Peer) {
-	logrus.Infof("node: start sync block headers with peer: %s", p.ID())
-
 	if p == nil {
 		for _, bestPeer := range n.Peers {
 			if bestPeer != nil {
@@ -102,19 +99,14 @@ func (n *node) sync(p peer.Peer) {
 		}
 	}
 
-	//TODO sync needs to be done when receiving headers from peer
 	isSynced, _ := n.synced(p)
-	for {
-		if isSynced {
-			logrus.Infof("node: sync block headers with peer: %s is done", p.ID())
-			return
-		}
 
-		if err := n.syncWithPeer(p.ID()); err != nil {
-			logrus.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
-		}
+	if isSynced {
+		logrus.Infof("node: block headers synced with peer: %s", p.ID())
+		return
+	}
 
-		isSynced, _ = n.synced(p)
-		time.Sleep(time.Second * 2)
+	if err := n.syncWithPeer(p.ID()); err != nil {
+		logrus.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
 	}
 }

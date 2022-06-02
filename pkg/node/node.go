@@ -107,7 +107,7 @@ func (n node) AddOutboundPeer(outbound peer.Peer) error {
 	return nil
 }
 
-// Run starts a node and add an initial outbound peer.
+// Start starts a node and add an initial outbound peer.
 func (n node) Start(initialOutboundPeerAddr string) error {
 	n.quit = make(chan struct{})
 	initialPeer, err := peer.NewElementsPeer(initialOutboundPeerAddr)

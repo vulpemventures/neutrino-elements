@@ -47,5 +47,7 @@ func (n node) handleHeaders(msgHeader *protocol.MessageHeader, p peer.Peer) erro
 		n.blockHeadersCh <- *v
 	}
 
+	n.sync(p)
+
 	return nil
 }

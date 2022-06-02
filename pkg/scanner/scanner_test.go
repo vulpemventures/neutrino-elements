@@ -16,7 +16,11 @@ import (
 func TestWatch(t *testing.T) {
 	const address = "el1qq0mjw2fwsc20vr4q2ypq9w7dslg6436zaahl083qehyghv7td3wnaawhrpxphtjlh4xjwm6mu29tp9uczkl8cxfyatqc3vgms"
 
-	n, s, reportCh := testutil.MakeNigiriTestServices(testutil.PeerAddrLocal, testutil.EsploraUrlLocal)
+	n, s, reportCh := testutil.MakeNigiriTestServices(
+		testutil.PeerAddrLocal,
+		testutil.EsploraUrlLocal,
+		"nigiri",
+	)
 
 	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
 	if err != nil {
@@ -50,7 +54,11 @@ func TestWatch(t *testing.T) {
 func TestWatchPersistent(t *testing.T) {
 	const address = "el1qqfs4ecf5427tyshnsq0x3jy3ad2tqfn03x3fqmxtyn2ycuvmk98urxmh9cdmr5zcqfs42l6a3kpyrk6pkxjx7yuvqsnuuckhp"
 
-	n, s, reportCh := testutil.MakeNigiriTestServices(testutil.PeerAddrLocal, testutil.EsploraUrlLocal)
+	n, s, reportCh := testutil.MakeNigiriTestServices(
+		testutil.PeerAddrLocal,
+		testutil.EsploraUrlLocal,
+		"nigiri",
+	)
 
 	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
 	if err != nil {
@@ -94,7 +102,11 @@ func TestWatchPersistent(t *testing.T) {
 }
 
 func TestWalletDescriptor(t *testing.T) {
-	n, s, reportCh := testutil.MakeNigiriTestServices(testutil.PeerAddrLocal, testutil.EsploraUrlLocal)
+	n, s, reportCh := testutil.MakeNigiriTestServices(
+		testutil.PeerAddrLocal,
+		testutil.EsploraUrlLocal,
+		"nigiri",
+	)
 
 	privkey, err := btcec.NewPrivateKey(btcec.S256())
 	if err != nil {
@@ -138,7 +150,11 @@ func TestWalletDescriptor(t *testing.T) {
 }
 
 func TestWalletDescriptorRange(t *testing.T) {
-	n, s, reportCh := testutil.MakeNigiriTestServices(testutil.PeerAddrLocal, testutil.EsploraUrlLocal)
+	n, s, reportCh := testutil.MakeNigiriTestServices(
+		testutil.PeerAddrLocal,
+		testutil.EsploraUrlLocal,
+		"nigiri",
+	)
 
 	masterPrivateKey, err := testutil.GenerateMasterPrivateKey()
 	if err != nil {
@@ -237,6 +253,7 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		"liquid-testnet.sevenlabs.dev:18886",
 		"http://blockstream.info/liquidtestnet/api",
+		"testnet",
 	)
 
 	time.Sleep(time.Minute * 1)
@@ -271,7 +288,7 @@ loop:
 		select {
 		case r := <-reportCh:
 			t.Log(r.Transaction.TxHash().String())
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Minute * 15):
 			break loop
 		}
 	}
