@@ -246,7 +246,7 @@ loop:
 }
 
 func TestWalletDescriptorTestNet(t *testing.T) {
-	t.SkipNow()
+	//t.SkipNow()
 	descInternal := "wpkh(xpub6CLsieBwg2jBNBbfoF7UqA6FnU6RjQLT2BXYRTxwq9BfTsSuMiEemky8jVnoECZSrqiJmyUCZUTg9SXJxFYZzzo66KVqL1Z4fYTb9rF6u3F/0/*)"
 	descExternal := "wpkh(xpub6CLsieBwg2jBNBbfoF7UqA6FnU6RjQLT2BXYRTxwq9BfTsSuMiEemky8jVnoECZSrqiJmyUCZUTg9SXJxFYZzzo66KVqL1Z4fYTb9rF6u3F/1/*)"
 
@@ -277,10 +277,6 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 		int(tip.Height),
 	); err != nil {
 		t.Fatal(err)
-	}
-
-	for r := range reportCh {
-		t.Log(r.Transaction.TxHash().String())
 	}
 
 loop:

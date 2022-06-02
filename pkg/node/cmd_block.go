@@ -48,6 +48,7 @@ func (n node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 	}
 
 	n.blockHeadersCh <- *msgBlock.Header
+	n.memPool.CheckTxConfirmed(msgBlock.Block)
 
 	return nil
 }

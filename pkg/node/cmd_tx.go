@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/sirupsen/logrus"
@@ -18,12 +17,9 @@ func (n node) handleTx(header *protocol.MessageHeader, p peer.Peer) error {
 		return err
 	}
 
-	hash, err := tx.Hash()
-	if err != nil {
-		return fmt.Errorf("tx.Hash: %+v", err)
-	}
+	logrus.Debugf("transaction: %x", tx.HashStr())
 
-	logrus.Debugf("transaction: %x", hash)
+	n.memPool.AddTx(tx)
 
 	return nil
 }
