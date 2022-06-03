@@ -137,9 +137,6 @@ func (s *scannerService) WatchDescriptorWallet(
 						}),
 						WithPersistentWatch(),
 					)
-					if err != nil {
-						return err
-					}
 				}
 			} else {
 				scripts, err = wallet.Script(nil)
@@ -154,9 +151,6 @@ func (s *scannerService) WatchDescriptorWallet(
 					}),
 					WithPersistentWatch(),
 				)
-				if err != nil {
-					return err
-				}
 			}
 
 		}

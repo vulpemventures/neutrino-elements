@@ -180,7 +180,6 @@ Loop:
 		}
 
 		if err := msgHeader.Validate(); err != nil {
-			logrus.Debugln(err)
 			logrus.Debugf("validate header failed: %+v", err)
 			continue
 		}

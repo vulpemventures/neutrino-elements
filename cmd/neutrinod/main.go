@@ -23,13 +23,14 @@ import (
 )
 
 const (
-	writeWait       = 10 * time.Second
 	pongWait        = 60 * time.Second
-	pingPeriod      = (pongWait * 9) / 10
 	maxMessageSize  = 512
 	shutdownTimeout = 2 * time.Second
 
 	unspents EventType = "UNSPENT"
+
+	nigiriUrl    = "localhost:18886"
+	neutrinodUrl = "localhost:8080"
 )
 
 var (
@@ -50,11 +51,21 @@ func main() {
 
 	blockSvc := blockservice.NewEsploraBlockService("http://localhost:3001")
 
+	peerUrl := nigiriUrl
+	if os.Getenv("PEER_URL") != "" {
+		peerUrl = os.Getenv("PEER_URL")
+	}
+
+	serverAddress := neutrinodUrl
+	if os.Getenv("NEUTRINOD_URL") != "" {
+		serverAddress = os.Getenv("NEUTRINOD_URL")
+	}
+
 	elementsNeutrinoDaemon, err := NewElementsNeutrinoServer(
 		nodeCfg,
 		blockSvc,
-		"localhost:18886",
-		"localhost:8080",
+		peerUrl,
+		serverAddress,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -241,7 +252,7 @@ func (n *NeutrinoServer) handleRequest(conn *websocket.Conn) {
 				if err := scannerSvc.WatchDescriptorWallet(
 					wsMsg.DescriptorWallet,
 					[]scanner.EventType{scanner.UnspentUtxo},
-					wsMsg.Height,
+					wsMsg.StartBlockHeight,
 				); err != nil {
 					log.Error(err)
 					return
@@ -284,12 +295,12 @@ func (n *NeutrinoServer) handleRequest(conn *websocket.Conn) {
 type EventType string
 
 type WsMessageReq struct {
-	EventType        string `json:"event_type"`
-	DescriptorWallet string `json:"descriptor_wallet"`
-	Height           int    `json:"height"`
+	EventType        string `json:"eventType"`
+	DescriptorWallet string `json:"descriptorWallet"`
+	StartBlockHeight int    `json:"startBlockHeight"`
 }
 
 type WsMessageRes struct {
-	EventType string `json:"event_type"`
-	TxID      string `json:"tx_id"`
+	EventType string `json:"eventType"`
+	TxID      string `json:"txId"`
 }
