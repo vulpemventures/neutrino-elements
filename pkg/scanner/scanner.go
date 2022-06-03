@@ -138,7 +138,7 @@ func (s *scannerService) WatchDescriptorWallet(
 						WithPersistentWatch(),
 					)
 					if err != nil {
-						panic(err)
+						return err
 					}
 				}
 			} else {
@@ -155,7 +155,7 @@ func (s *scannerService) WatchDescriptorWallet(
 					WithPersistentWatch(),
 				)
 				if err != nil {
-					panic(err)
+					return err
 				}
 			}
 
