@@ -212,15 +212,15 @@ func TestWalletDescriptorRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, v := range addresses {
-		if err = testutil.SendToAddr(v); err != nil {
-			t.Fatal(err)
-		}
-	}
+	go func() {
+		for _, v := range addresses {
+			time.Sleep(2 * time.Second)
 
-	if err = testutil.GenerateToAddr(addresses[0]); err != nil {
-		t.Fatal(err)
-	}
+			if _, err := testutil.Faucet(v); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}()
 
 	i := 0
 loop:
@@ -232,7 +232,7 @@ loop:
 				break loop
 			}
 			t.Log(r.Transaction.TxHash().String())
-		case <-time.After(time.Second * 5):
+		case <-time.After(time.Minute):
 			break loop
 		}
 	}
