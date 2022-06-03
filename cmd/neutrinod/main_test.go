@@ -98,7 +98,7 @@ func TestNeutrinoDaemon(t *testing.T) {
 
 	now := time.Now()
 	for {
-		if time.Since(now) > time.Second*20 {
+		if time.Since(now) > time.Second*45 {
 			t.Fatal("test timeout")
 		}
 
