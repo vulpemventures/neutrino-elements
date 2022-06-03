@@ -54,7 +54,7 @@ func TestNeutrinoDaemon(t *testing.T) {
 	req := WsMessageReq{
 		EventType:        "UNSPENT",
 		DescriptorWallet: wpkhWalletDescriptor,
-		Height:           0,
+		StartBlockHeight: 0,
 	}
 
 	reqBytes, err := json.Marshal(req)
