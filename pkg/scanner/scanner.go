@@ -3,6 +3,7 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"github.com/vulpemventures/go-elements/descriptor"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcutil/gcs/builder"
@@ -10,7 +11,17 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+
+	log "github.com/sirupsen/logrus"
 )
+
+const (
+	UnspentUtxo EventType = iota
+
+	numOsScripts = 100
+)
+
+type EventType int
 
 type Report struct {
 	// Transaction is the transaction that includes the item that was found.
@@ -29,8 +40,15 @@ type ScannerService interface {
 	Start() (<-chan Report, error)
 	// Stop the scanner
 	Stop()
-	// Add a new request to the queue
+	// Watch add a new request to the queue
 	Watch(...ScanRequestOption)
+	// WatchDescriptorWallet imports wallet descriptor, generates scripts and which
+	//for specific events for those scripts
+	WatchDescriptorWallet(
+		descriptor string,
+		eventType []EventType,
+		blockStart int,
+	) error
 }
 
 type scannerService struct {
@@ -62,8 +80,10 @@ func New(
 }
 
 func (s *scannerService) Start() (<-chan Report, error) {
+	log.Info("starting scanner")
+
 	if s.started {
-		return nil, fmt.Errorf("utxo scanner already started")
+		return nil, fmt.Errorf("scanner already started")
 	}
 
 	s.quitCh = make(chan struct{}, 1)
@@ -76,6 +96,8 @@ func (s *scannerService) Start() (<-chan Report, error) {
 }
 
 func (s *scannerService) Stop() {
+	log.Info("stopping scanner")
+
 	s.quitCh <- struct{}{}
 	s.started = false
 	s.requestsQueue = newScanRequestQueue()
@@ -84,6 +106,57 @@ func (s *scannerService) Stop() {
 func (s *scannerService) Watch(opts ...ScanRequestOption) {
 	req := newScanRequest(opts...)
 	s.requestsQueue.enqueue(req)
+}
+
+func (s *scannerService) WatchDescriptorWallet(
+	desc string,
+	eventType []EventType,
+	blockStart int,
+) error {
+	for _, v := range eventType {
+		switch v {
+		case UnspentUtxo:
+			wallet, err := descriptor.Parse(desc)
+			if err != nil {
+				return err
+			}
+
+			var scripts []descriptor.ScriptResponse
+
+			if wallet.IsRange() {
+				scripts, err = wallet.Script(descriptor.WithRange(numOsScripts))
+				if err != nil {
+					return err
+				}
+
+				for _, v := range scripts {
+					s.Watch(
+						WithStartBlock(uint32(blockStart)),
+						WithWatchItem(&ScriptWatchItem{
+							outputScript: v.Script,
+						}),
+						WithPersistentWatch(),
+					)
+				}
+			} else {
+				scripts, err = wallet.Script(nil)
+				if err != nil {
+					return err
+				}
+
+				s.Watch(
+					WithStartBlock(uint32(blockStart)),
+					WithWatchItem(&ScriptWatchItem{
+						outputScript: scripts[0].Script,
+					}),
+					WithPersistentWatch(),
+				)
+			}
+
+		}
+	}
+
+	return nil
 }
 
 // requestsManager is responsible to resolve the requests that are waiting for in the queue.

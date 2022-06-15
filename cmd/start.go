@@ -44,7 +44,7 @@ func startAction(state *State) cli.ActionFunc {
 		if len(peers) > 1 {
 			// Connect to additional peers.
 			for _, p := range peers[1:] {
-				pTcp, err := peer.NewPeerTCP(p)
+				pTcp, err := peer.NewElementsPeer(p)
 				if err != nil {
 					panic(err)
 				}

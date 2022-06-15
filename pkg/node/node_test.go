@@ -3,12 +3,9 @@ package node_test
 import (
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
+	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"testing"
 	"time"
-)
-
-var (
-	peerAddr = "localhost:18886"
 )
 
 func TestSendTransaction(t *testing.T) {
@@ -22,11 +19,11 @@ func TestSendTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := nodeSvc.Start(peerAddr); err != nil {
+	if err := nodeSvc.Start(testutil.PeerAddrLocal); err != nil {
 		t.Fatal(err)
 	}
 
-	txHex, txID, err := createTx()
+	txHex, txID, err := testutil.CreateTx()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +34,7 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	time.Sleep(time.Second * 5)
-	_, err = getTransactionHex(txID)
+	_, err = testutil.GetTransactionHex(txID)
 	if err != nil {
 		t.Fatal(err)
 	}

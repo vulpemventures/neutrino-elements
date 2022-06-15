@@ -9,9 +9,9 @@ var (
 	MagicNigiri        Magic = [magicLength]byte{0x12, 0x34, 0x56, 0x78}
 	MagicLiquidTestnet Magic = [magicLength]byte{0x41, 0x0e, 0xdd, 0x62}
 	Networks                 = map[string][magicLength]byte{
-		"liquid":         MagicLiquid,
-		"liquid-testnet": MagicLiquidTestnet,
-		"nigiri":         MagicNigiri,
+		"liquid":  MagicLiquid,
+		"testnet": MagicLiquidTestnet,
+		"nigiri":  MagicNigiri,
 	}
 
 	NigiriGenesisBlockHash string       = "00902a6b70c2ca83b5d9c815d96a0e2f4202179316970d14ea1847dae5b1ca21"

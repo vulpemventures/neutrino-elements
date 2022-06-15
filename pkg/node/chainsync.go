@@ -3,12 +3,12 @@ package node
 import (
 	"context"
 	"fmt"
-
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
+	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
 
 var zeroHash [32]byte = [32]byte{
@@ -18,8 +18,8 @@ var zeroHash [32]byte = [32]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }
 
-func (no *node) isSync() (bool, error) {
-	chainTip, err := no.blockHeadersDb.ChainTip(context.Background())
+func (n *node) synced(p peer.Peer) (bool, error) {
+	chainTip, err := n.blockHeadersDb.ChainTip(context.Background())
 	if err != nil {
 		return false, err
 	}
@@ -33,50 +33,63 @@ func (no *node) isSync() (bool, error) {
 		return false, err
 	}
 
-	tipHasAllAncestors, err := no.blockHeadersDb.HasAllAncestors(context.Background(), tipHash)
+	tipHasAllAncestors, err := n.blockHeadersDb.HasAllAncestors(context.Background(), tipHash)
 	if err != nil {
 		return false, err
+	}
+
+	if chainTip.Height != p.StartBlockHeight() {
+		return false, nil
 	}
 
 	return tipHasAllAncestors, nil
 }
 
-func (no *node) getGenesisBlockHash() (*chainhash.Hash, error) {
-	genesisHexHash := protocol.GetCheckpoints(no.Network)[0]
+func (n *node) getGenesisBlockHash() (*chainhash.Hash, error) {
+	genesisHexHash := protocol.GetCheckpoints(n.Network)[0]
 	return chainhash.NewHashFromStr(genesisHexHash)
 }
 
-func (no *node) syncWithPeer(peerID peer.PeerID) error {
-	peer := no.Peers[peerID]
+func (n *node) syncWithPeer(peerID peer.PeerID) error {
+	peer := n.Peers[peerID]
 
 	if peer == nil {
 		return fmt.Errorf("peer %s not found", peerID)
 	}
 
-	locator, err := no.blockHeadersDb.LatestBlockLocator(context.Background())
+	var stopHash [32]byte
+
+	locator, err := n.blockHeadersDb.LatestBlockLocator(context.Background())
 	if err != nil {
-		genesisHash, err := no.getGenesisBlockHash()
-		if err != nil {
+		if err == repository.ErrNoBlocksHeaders {
+			genesisHash, err := n.getGenesisBlockHash()
+			if err != nil {
+				return err
+			}
+
+			locator = blockchain.BlockLocator{genesisHash}
+			stopHash = zeroHash
+		} else {
 			return err
 		}
-
-		locator = blockchain.BlockLocator{genesisHash}
+	} else {
+		stopHash = *locator[len(locator)-1]
 	}
 
-	msg, err := protocol.NewMsgGetHeaders(no.Network, zeroHash, locator)
+	msg, err := protocol.NewMsgGetHeaders(n.Network, stopHash, locator)
 	if err != nil {
 		return err
 	}
 
 	logrus.Debugf("sending getheaders to peer %s", peerID)
-	if err := no.sendMessage(peer.Connection(), msg); err != nil {
+	if err := n.sendMessage(peer.Connection(), msg); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (n *node) checkSync(p peer.Peer) {
+func (n *node) sync(p peer.Peer) {
 	if p == nil {
 		for _, bestPeer := range n.Peers {
 			if bestPeer != nil {
@@ -86,9 +99,14 @@ func (n *node) checkSync(p peer.Peer) {
 		}
 	}
 
-	isSync, _ := n.isSync()
-	if !isSync {
-		logrus.Infof("start sync block headers with peer: %s", p.ID())
-		n.syncWithPeer(p.ID())
+	isSynced, _ := n.synced(p)
+
+	if isSynced {
+		logrus.Infof("node: block headers synced with peer: %s", p.ID())
+		return
+	}
+
+	if err := n.syncWithPeer(p.ID()); err != nil {
+		logrus.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
 	}
 }

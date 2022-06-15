@@ -43,7 +43,11 @@ func (n node) handleVersion(header *protocol.MessageHeader, p peer.Peer) error {
 		return err
 	}
 
-	n.addPeer(p)
+	p.SetStartBlockHeight(uint32(version.StartHeight))
+	if err := n.addPeer(p); err != nil {
+		return err
+	}
+
 	go n.monitorPeer(p)
 	logrus.Debugf("new peer %s", p.ID())
 

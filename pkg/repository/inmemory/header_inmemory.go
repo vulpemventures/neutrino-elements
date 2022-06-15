@@ -106,14 +106,14 @@ func (h *headerInmemory) getBlockHeaderByHeight(height uint32) (*block.Header, e
 	return nil, repository.ErrBlockNotFound
 }
 
-func (h *headerInmemory) blockLocatorFromHash(chainTip *block.Header) (blockchain.BlockLocator, error) {
+func (h *headerInmemory) blockLocatorFromHash(block *block.Header) (blockchain.BlockLocator, error) {
 	var locator blockchain.BlockLocator
 
-	if chainTip == nil {
+	if block == nil {
 		return nil, repository.ErrBlockNotFound
 	}
 
-	hash, err := chainTip.Hash()
+	hash, err := block.Hash()
 	if err != nil {
 		return nil, err
 	}
@@ -121,18 +121,24 @@ func (h *headerInmemory) blockLocatorFromHash(chainTip *block.Header) (blockchai
 	// Append the initial hash
 	locator = append(locator, &hash)
 
-	if chainTip.Height == 0 || err != nil {
+	if block.Height == 0 || err != nil {
 		return locator, nil
 	}
 
-	height := chainTip.Height
+	height := block.Height
 	decrement := uint32(1)
 	for height > 0 && len(locator) < wire.MaxBlockLocatorsPerMsg {
-		// Decrement by 1 for the first 10 blocks, then double the jump
-		// until we get to the genesis hash
-		if len(locator) > 10 {
-			decrement *= 2
+		blockHeader, err := h.getBlockHeaderByHeight(height)
+		if err != nil {
+			return nil, err
 		}
+
+		headerHash, err := blockHeader.Hash()
+		if err != nil {
+			return nil, err
+		}
+
+		locator = append(locator, &headerHash)
 
 		if decrement > height {
 			height = 0
@@ -140,17 +146,11 @@ func (h *headerInmemory) blockLocatorFromHash(chainTip *block.Header) (blockchai
 			height -= decrement
 		}
 
-		blockHeader, err := h.getBlockHeaderByHeight(height)
-		if err != nil {
-			return locator, err
+		// Decrement by 1 for the first 10 blocks, then double the jump
+		// until we get to the genesis hash
+		if len(locator) > 10 {
+			decrement *= 2
 		}
-
-		headerHash, err := blockHeader.Hash()
-		if err != nil {
-			return locator, err
-		}
-
-		locator = append(locator, &headerHash)
 	}
 
 	return locator, nil

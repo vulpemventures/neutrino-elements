@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"github.com/vulpemventures/go-elements/block"
 	"io"
 
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
@@ -10,22 +11,44 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 )
 
-func (no node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
-	var block protocol.MsgBlock
+func (n node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
+	var msgBlock protocol.MsgBlock
 
-	_, err := no.blockHeadersDb.ChainTip(context.Background())
+	_, err := n.blockHeadersDb.ChainTip(context.Background())
 	if err != nil && err != repository.ErrNoBlocksHeaders {
 		return err
 	}
 
 	lr := io.LimitReader(p.Connection(), int64(header.Length))
-	if err := binary.NewDecoder(lr).Decode(&block); err != nil {
+	if err := binary.NewDecoder(lr).Decode(&msgBlock); err != nil {
 		return err
 	}
 
-	no.memPool.CheckTxConfirmed(block.Block)
+	tip, err := n.blockHeadersDb.ChainTip(context.Background())
+	if err != nil {
+		if err == repository.ErrNoBlocksHeaders {
+			tip = &block.Header{
+				Height: 0,
+			}
+		} else {
+			return err
+		}
+	}
 
-	no.blockHeadersCh <- *block.Header
+	//if new block arrives before sync is done and if it is greater than peer
+	//start height update height so that we can sync till this height
+	newBlockHeight := msgBlock.Header.Height
+	if newBlockHeight != tip.Height+1 {
+		if newBlockHeight > p.StartBlockHeight() {
+			p.SetStartBlockHeight(newBlockHeight)
+			n.sync(p)
+		}
+
+		return nil
+	}
+
+	n.blockHeadersCh <- *msgBlock.Header
+	n.memPool.CheckTxConfirmed(msgBlock.Block)
 
 	return nil
 }
