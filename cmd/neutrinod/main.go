@@ -250,6 +250,7 @@ func (n *NeutrinoServer) handleRequest(conn *websocket.Conn) {
 				)
 
 				if err := scannerSvc.WatchDescriptorWallet(
+					1,
 					wsMsg.DescriptorWallet,
 					[]scanner.EventType{scanner.UnspentUtxo},
 					wsMsg.StartBlockHeight,

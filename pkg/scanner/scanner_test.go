@@ -124,6 +124,7 @@ func TestWalletDescriptor(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
+		1,
 		wpkhWalletDescriptor,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -205,6 +206,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
+		1,
 		wpkhWalletDescriptor,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -264,6 +266,7 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
+		1,
 		descInternal,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -272,6 +275,7 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
+		1,
 		descExternal,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),

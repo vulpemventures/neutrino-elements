@@ -25,7 +25,10 @@ type SpentWatchItem struct {
 	outputScript []byte          // the way the outpoint should be spent
 }
 
-func NewSpentWatchItemFromInput(input *transaction.TxInput, prevoutScript []byte) (WatchItem, error) {
+func NewSpentWatchItemFromInput(
+	input *transaction.TxInput,
+	prevoutScript []byte,
+) (WatchItem, error) {
 	h, err := chainhash.NewHash(input.Hash)
 	if err != nil {
 		return nil, err

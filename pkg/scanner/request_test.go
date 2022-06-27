@@ -12,6 +12,11 @@ type fakeWatchItem struct {
 	bytes []byte
 }
 
+func (f *fakeWatchItem) EventType() scanner.EventType {
+	//TODO implement me
+	panic("implement me")
+}
+
 var _ scanner.WatchItem = (*fakeWatchItem)(nil)
 
 func (f *fakeWatchItem) Bytes() []byte {

@@ -46,6 +46,7 @@ type ScannerService interface {
 	// WatchDescriptorWallet imports wallet descriptor, generates scripts and which
 	//for specific events for those scripts
 	WatchDescriptorWallet(
+		requestID int,
 		descriptor string,
 		eventType []EventType,
 		blockStart int,
@@ -110,6 +111,7 @@ func (s *scannerService) Watch(opts ...ScanRequestOption) {
 }
 
 func (s *scannerService) WatchDescriptorWallet(
+	requestID int,
 	desc string,
 	eventType []EventType,
 	blockStart int,
@@ -132,6 +134,7 @@ func (s *scannerService) WatchDescriptorWallet(
 
 				for _, v := range scripts {
 					s.Watch(
+						WithRequestID(requestID),
 						WithStartBlock(uint32(blockStart)),
 						WithWatchItem(&UnspentWatchItem{
 							outputScript: v.Script,
