@@ -22,7 +22,7 @@ func TestWatch(t *testing.T) {
 		"nigiri",
 	)
 
-	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
+	watchItem, err := scanner.NewUnspentWatchItemFromAddress(address)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestWatchPersistent(t *testing.T) {
 		"nigiri",
 	)
 
-	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
+	watchItem, err := scanner.NewUnspentWatchItemFromAddress(address)
 	if err != nil {
 		t.Fatal(err)
 	}

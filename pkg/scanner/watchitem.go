@@ -14,71 +14,81 @@ type WatchItem interface {
 	Bytes() []byte
 	// Match is used to check if a transaction matches the watch item
 	Match(tx *transaction.Transaction) bool
+	// EventType returns the type of event that will be reported by the scanner
+	EventType() EventType
 }
 
-// OutpointWatchItem can be used to check if an outpoint is spent by transaction inputs
-type OutpointWatchItem struct {
+// SpentWatchItem is used to watch for spent utxos.
+type SpentWatchItem struct {
 	hash         *chainhash.Hash // tx hash of the outpoint
 	index        uint32          // index of the outpoint
 	outputScript []byte          // the way the outpoint should be spent
 }
 
-func NewOutpointWatchItemFromInput(input *transaction.TxInput, prevoutScript []byte) (*OutpointWatchItem, error) {
+func NewSpentWatchItemFromInput(input *transaction.TxInput, prevoutScript []byte) (WatchItem, error) {
 	h, err := chainhash.NewHash(input.Hash)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OutpointWatchItem{
+	return &SpentWatchItem{
 		hash:         h,
 		index:        input.Index,
 		outputScript: prevoutScript,
 	}, nil
 }
 
-func (i *OutpointWatchItem) Bytes() []byte {
-	return i.outputScript
+func (o *SpentWatchItem) Bytes() []byte {
+	return o.outputScript
 }
 
-func (i *OutpointWatchItem) Match(tx *transaction.Transaction) bool {
+func (o *SpentWatchItem) Match(tx *transaction.Transaction) bool {
 	for _, txInput := range tx.Inputs {
 		chainHashTxInput, err := chainhash.NewHash(txInput.Hash)
 		if err != nil {
 			continue
 		}
 
-		if i.hash.IsEqual(chainHashTxInput) && i.index == txInput.Index {
+		if o.hash.IsEqual(chainHashTxInput) && o.index == txInput.Index {
 			return true
 		}
 	}
 	return false
 }
 
-// ScriptWatchItem is used to check if a transaction sends funds to a script
-type ScriptWatchItem struct {
+func (o *SpentWatchItem) EventType() EventType {
+	return SpentUtxo
+}
+
+// UnspentWatchItem is used to recognise new unspent output related to a specific address/script
+type UnspentWatchItem struct {
 	outputScript []byte
 }
 
-func NewScriptWatchItemFromAddress(addr string) (WatchItem, error) {
+func NewUnspentWatchItemFromAddress(addr string) (WatchItem, error) {
 	script, err := address.ToOutputScript(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ScriptWatchItem{
+	return &UnspentWatchItem{
 		outputScript: script,
 	}, nil
 }
 
-func (i *ScriptWatchItem) Bytes() []byte {
-	return i.outputScript
+func (u *UnspentWatchItem) Bytes() []byte {
+	return u.outputScript
 }
 
-func (i *ScriptWatchItem) Match(tx *transaction.Transaction) bool {
+func (u *UnspentWatchItem) Match(tx *transaction.Transaction) bool {
 	for _, txOutput := range tx.Outputs {
-		if bytes.Equal(i.outputScript, txOutput.Script) {
+		if bytes.Equal(u.outputScript, txOutput.Script) {
 			return true
 		}
 	}
 	return false
+}
+
+func (u *UnspentWatchItem) EventType() EventType {
+	return UnspentUtxo
 }

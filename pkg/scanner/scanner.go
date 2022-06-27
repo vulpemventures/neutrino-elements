@@ -17,6 +17,7 @@ import (
 
 const (
 	UnspentUtxo EventType = iota
+	SpentUtxo
 
 	numOsScripts = 100
 )
@@ -132,7 +133,7 @@ func (s *scannerService) WatchDescriptorWallet(
 				for _, v := range scripts {
 					s.Watch(
 						WithStartBlock(uint32(blockStart)),
-						WithWatchItem(&ScriptWatchItem{
+						WithWatchItem(&UnspentWatchItem{
 							outputScript: v.Script,
 						}),
 						WithPersistentWatch(),
@@ -146,7 +147,7 @@ func (s *scannerService) WatchDescriptorWallet(
 
 				s.Watch(
 					WithStartBlock(uint32(blockStart)),
-					WithWatchItem(&ScriptWatchItem{
+					WithWatchItem(&UnspentWatchItem{
 						outputScript: scripts[0].Script,
 					}),
 					WithPersistentWatch(),

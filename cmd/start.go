@@ -73,7 +73,7 @@ func startAction(state *State) cli.ActionFunc {
 		}()
 
 		// we'll watch if this address receives fund
-		watchItem, err := scanner.NewScriptWatchItemFromAddress(addr)
+		watchItem, err := scanner.NewUnspentWatchItemFromAddress(addr)
 		if err != nil {
 			panic(err)
 		}
