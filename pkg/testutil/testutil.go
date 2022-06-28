@@ -395,7 +395,7 @@ func MakeNigiriTestServices(
 	peerUrl string,
 	esploraUrl string,
 	network string,
-) (node.NodeService, scanner.ScannerService,
+) (node.NodeService, scanner.Service,
 	<-chan scanner.Report) {
 	n, err := node.New(node.NodeConfig{
 		Network:        network,
@@ -416,7 +416,7 @@ func MakeNigiriTestServices(
 	time.Sleep(time.Second * 3) // wait for the node sync the first headers if the repo is empty
 
 	blockSvc := blockservice.NewEsploraBlockService(esploraUrl)
-	genesisBlockHash := protocol.GetCheckpoints(protocol.MagicNigiri)[0]
+	genesisBlockHash := protocol.GetCheckpoints(protocol.MagicRegtest)[0]
 	h, err := chainhash.NewHashFromStr(genesisBlockHash)
 	if err != nil {
 		panic(err)

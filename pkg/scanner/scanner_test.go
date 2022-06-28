@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -19,7 +20,7 @@ func TestWatch(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
 	watchItem, err := scanner.NewUnspentWatchItemFromAddress(address)
@@ -57,7 +58,7 @@ func TestWatchPersistent(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
 	watchItem, err := scanner.NewUnspentWatchItemFromAddress(address)
@@ -105,7 +106,7 @@ func TestWalletDescriptor(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
 	privkey, err := btcec.NewPrivateKey(btcec.S256())
@@ -124,7 +125,7 @@ func TestWalletDescriptor(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
-		1,
+		uuid.New(),
 		wpkhWalletDescriptor,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -154,7 +155,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
 	masterPrivateKey, err := testutil.GenerateMasterPrivateKey()
@@ -206,7 +207,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
-		1,
+		uuid.New(),
 		wpkhWalletDescriptor,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -248,7 +249,7 @@ loop:
 }
 
 func TestWalletDescriptorTestNet(t *testing.T) {
-	t.SkipNow()
+	//t.SkipNow()
 	descInternal := "wpkh(xpub6CLsieBwg2jBNBbfoF7UqA6FnU6RjQLT2BXYRTxwq9BfTsSuMiEemky8jVnoECZSrqiJmyUCZUTg9SXJxFYZzzo66KVqL1Z4fYTb9rF6u3F/0/*)"
 	descExternal := "wpkh(xpub6CLsieBwg2jBNBbfoF7UqA6FnU6RjQLT2BXYRTxwq9BfTsSuMiEemky8jVnoECZSrqiJmyUCZUTg9SXJxFYZzzo66KVqL1Z4fYTb9rF6u3F/1/*)"
 
@@ -266,7 +267,7 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
-		1,
+		uuid.New(),
 		descInternal,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -275,7 +276,7 @@ func TestWalletDescriptorTestNet(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
-		1,
+		uuid.New(),
 		descExternal,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),

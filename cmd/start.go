@@ -26,7 +26,7 @@ func startAction(state *State) cli.ActionFunc {
 
 		// Create a new peer node.
 		node, err := node.New(node.NodeConfig{
-			Network:        "nigiri",
+			Network:        "regtest",
 			UserAgent:      "neutrino-elements:0.0.1",
 			FiltersDB:      state.filtersDB,
 			BlockHeadersDB: state.blockHeadersDB,
@@ -53,7 +53,7 @@ func startAction(state *State) cli.ActionFunc {
 			}
 		}
 
-		genesisBlockHash := protocol.GetCheckpoints(protocol.MagicNigiri)[0]
+		genesisBlockHash := protocol.GetCheckpoints(protocol.MagicRegtest)[0]
 		h, err := chainhash.NewHashFromStr(genesisBlockHash)
 		if err != nil {
 			panic(err)

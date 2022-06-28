@@ -29,7 +29,7 @@ func TestMessageSerialization(t *testing.T) {
 		StartHeight: -1,
 		Relay:       true,
 	}
-	msg, err := protocol.NewMessage("version", protocol.MagicNigiri, version)
+	msg, err := protocol.NewMessage("version", protocol.MagicRegtest, version)
 	if err != nil {
 		t.Errorf("unexpected error: %+v", err)
 		return
@@ -78,7 +78,7 @@ func TestHasValidCommand(t *testing.T) {
 
 func TestHasValidMagic(t *testing.T) {
 	magicMainnet := protocol.MagicLiquid
-	magicSimnet := protocol.MagicNigiri
+	magicSimnet := protocol.MagicRegtest
 	magicTestnet := protocol.MagicLiquidTestnet
 
 	tests := []struct {
@@ -87,7 +87,7 @@ func TestHasValidMagic(t *testing.T) {
 		expected bool
 	}{
 		{"liquid", magicMainnet, true},
-		{"nigiri", magicSimnet, true},
+		{"regtest", magicSimnet, true},
 		{"liquid testnet", magicTestnet, true},
 		{"invalid", [4]byte{0xde, 0xad, 0xbe, 0xef}, false},
 	}

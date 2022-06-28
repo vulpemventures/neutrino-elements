@@ -10,7 +10,7 @@ import (
 
 func TestSendTransaction(t *testing.T) {
 	nodeSvc, err := node.New(node.NodeConfig{
-		Network:        "nigiri",
+		Network:        "regtest",
 		UserAgent:      "neutrino-elements:0.0.1",
 		FiltersDB:      inmemory.NewFilterInmemory(),
 		BlockHeadersDB: inmemory.NewHeaderInmemory(),

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+	"sync"
 )
 
 var zeroHash [32]byte = [32]byte{
@@ -17,6 +18,10 @@ var zeroHash [32]byte = [32]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }
+
+var (
+	notifySyncedOnce sync.Once
+)
 
 func (n *node) synced(p peer.Peer) (bool, error) {
 	chainTip, err := n.blockHeadersDb.ChainTip(context.Background())
@@ -51,6 +56,8 @@ func (n *node) getGenesisBlockHash() (*chainhash.Hash, error) {
 }
 
 func (n *node) syncWithPeer(peerID peer.PeerID) error {
+	log.Infof("node: syncing block headers with peer: %s ...", peerID)
+
 	peer := n.Peers[peerID]
 
 	if peer == nil {
@@ -81,7 +88,7 @@ func (n *node) syncWithPeer(peerID peer.PeerID) error {
 		return err
 	}
 
-	logrus.Debugf("sending getheaders to peer %s", peerID)
+	log.Debugf("sending getheaders to peer %s", peerID)
 	if err := n.sendMessage(peer.Connection(), msg); err != nil {
 		return err
 	}
@@ -100,13 +107,18 @@ func (n *node) sync(p peer.Peer) {
 	}
 
 	isSynced, _ := n.synced(p)
-
 	if isSynced {
-		logrus.Infof("node: block headers synced with peer: %s", p.ID())
+		notifySyncedOnce.Do(
+			func() {
+				log.Infof("node: block headers synced with peer: %s", p.ID())
+				n.syncedChan <- struct{}{}
+			},
+		)
+
 		return
 	}
 
 	if err := n.syncWithPeer(p.ID()); err != nil {
-		logrus.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
+		log.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
 	}
 }

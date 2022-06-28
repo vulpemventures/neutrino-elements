@@ -1,8 +1,10 @@
 package scanner
 
+import "github.com/google/uuid"
+
 type ScanRequest struct {
-	// ID of the request
-	ID int
+	// ClientID of the client sending request
+	ClientID uuid.UUID
 	// StartHeight from which scan should be performed, nil means scan from genesis block
 	StartHeight uint32
 	// Item to watch
@@ -31,9 +33,9 @@ func WithPersistentWatch() ScanRequestOption {
 	}
 }
 
-func WithRequestID(id int) ScanRequestOption {
+func WithRequestID(id uuid.UUID) ScanRequestOption {
 	return func(req *ScanRequest) {
-		req.ID = id
+		req.ClientID = id
 	}
 }
 

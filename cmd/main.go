@@ -15,7 +15,7 @@ type State struct {
 	filtersDB      repository.FilterRepository
 	blockHeadersDB repository.BlockHeaderRepository
 	nodeService    node.NodeService
-	utxoScanner    scanner.ScannerService
+	utxoScanner    scanner.Service
 	reportsChan    <-chan scanner.Report
 }
 

@@ -46,7 +46,8 @@ type node struct {
 
 	memPool MemPool
 
-	quit chan struct{}
+	quit       chan struct{}
+	syncedChan chan struct{}
 }
 
 var _ NodeService = (*node)(nil)
@@ -80,6 +81,7 @@ func New(config NodeConfig) (NodeService, error) {
 		blockHeadersDb:   config.BlockHeadersDB,
 		memPool:          NewMemPool(log.InfoLevel),
 		quit:             make(chan struct{}),
+		syncedChan:       make(chan struct{}),
 	}, nil
 }
 
@@ -128,6 +130,8 @@ func (n node) Start(initialOutboundPeerAddr string) error {
 	go n.monitorCFilters()
 
 	n.memPool.Start()
+
+	<-n.syncedChan
 
 	return nil
 }

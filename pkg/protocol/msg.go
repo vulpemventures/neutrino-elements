@@ -85,7 +85,7 @@ func (mh MessageHeader) HasValidCommand() bool {
 // Returns false otherwise.
 func (mh MessageHeader) HasValidMagic() bool {
 	switch mh.Magic {
-	case MagicLiquid, MagicLiquidTestnet, MagicNigiri:
+	case MagicLiquid, MagicLiquidTestnet, MagicRegtest:
 		return true
 	}
 
