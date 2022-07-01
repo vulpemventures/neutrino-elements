@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
-	"github.com/vulpemventures/neutrino-elements/internal/interface/web-socket/handler"
+	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"net/url"
@@ -29,7 +29,7 @@ func (e *E2ESuite) TestEnd2End() {
 	i := 0
 	for k, v := range wsRequests {
 		wg.Add(1)
-		go func(a string, b handler.WsMessageRequest, i int) {
+		go func(a string, b neutrinodtypes.WsMessageRequest, i int) {
 			invokeNeutrinoD(i, e.T(), &wg, a, b)
 		}(k, v, i)
 		i++
@@ -37,8 +37,8 @@ func (e *E2ESuite) TestEnd2End() {
 	wg.Wait()
 }
 
-func createTxs(t *testing.T) map[string]handler.WsMessageRequest {
-	resp := make(map[string]handler.WsMessageRequest)
+func createTxs(t *testing.T) map[string]neutrinodtypes.WsMessageRequest {
+	resp := make(map[string]neutrinodtypes.WsMessageRequest)
 	for i := 0; i < 5; i++ {
 		privkey, err := btcec.NewPrivateKey(btcec.S256())
 		if err != nil {
@@ -49,7 +49,7 @@ func createTxs(t *testing.T) map[string]handler.WsMessageRequest {
 		addr, _ := p2wpkh.WitnessPubKeyHash()
 		wpkhWalletDescriptor := fmt.Sprintf("wpkh(%v)", hex.EncodeToString(pubkey.SerializeCompressed()))
 
-		req := handler.WsMessageRequest{
+		req := neutrinodtypes.WsMessageRequest{
 			ActionType:       "register",
 			EventTypes:       []scanner.EventType{scanner.UnspentUtxo},
 			DescriptorWallet: wpkhWalletDescriptor,
@@ -78,7 +78,7 @@ func invokeNeutrinoD(
 	t *testing.T,
 	wg *sync.WaitGroup,
 	addr string,
-	req handler.WsMessageRequest,
+	req neutrinodtypes.WsMessageRequest,
 ) {
 	defer wg.Done()
 
@@ -108,7 +108,7 @@ func invokeNeutrinoD(
 				return
 			}
 
-			msg := handler.WsOnChainEventResponse{}
+			msg := neutrinodtypes.WsOnChainEventResponse{}
 			if err := json.Unmarshal(message, &msg); err != nil {
 				t.Error(err)
 			}

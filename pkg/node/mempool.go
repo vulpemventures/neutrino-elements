@@ -31,10 +31,7 @@ type MemPool struct {
 	txSubscribers []txSubscriber
 }
 
-func NewMemPool(
-	logLevel log.Level,
-) MemPool {
-	log.SetLevel(logLevel)
+func NewMemPool() MemPool {
 	return MemPool{
 		txChan:   make(chan protocol.MsgTx),
 		txs:      make(map[string]txData),
@@ -87,7 +84,7 @@ type txSubscriber struct {
 }
 
 func (m *MemPool) Start() {
-	log.Infoln("memPool started")
+	log.Debugln("mem-pool: mem-pool started")
 	go m.listenForNewTxs()
 }
 
@@ -168,7 +165,7 @@ func (m *MemPool) addTx(txID string, txData txData) {
 }
 
 func (m *MemPool) listenForNewTxs() {
-	log.Infoln("listening for new transactions")
+	log.Debugln("mem-pool: listening for new transactions")
 
 	for tx := range m.txChan {
 		m.addTx(
@@ -187,7 +184,7 @@ func (m *MemPool) listenForNewTxs() {
 		log.Debugf("tx %s added to memPool", tx.HashStr())
 	}
 
-	log.Infoln("memPool listener stopped")
+	log.Debugln("mem-pool: memPool listener stopped")
 }
 
 func (m *MemPool) notifySubscribers(txEvent TxEvent) {

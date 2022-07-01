@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/internal/core/application"
 	"github.com/vulpemventures/neutrino-elements/internal/interface/web-socket/handler"
+	"github.com/vulpemventures/neutrino-elements/internal/interface/web-socket/middleware"
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
@@ -50,9 +51,11 @@ func NewElementsNeutrinoServer(
 func (n *NeutrinoServer) Start(ctx context.Context, stop context.CancelFunc) <-chan error {
 	errC := make(chan error, 1)
 
+	log.Infoln("neutrinod: waiting for node to sync with peer...")
 	if err := n.nodeSvc.Start(n.peerUrl); err != nil {
 		errC <- err
 	}
+	log.Infoln("neutrinod: node is synced with peer")
 
 	genesisBlockHashStr := protocol.GetCheckpoints(protocol.MagicRegtest)[0]
 	genesisBlockHash, err := chainhash.NewHashFromStr(genesisBlockHashStr)
@@ -73,12 +76,20 @@ func (n *NeutrinoServer) Start(ctx context.Context, stop context.CancelFunc) <-c
 		errC <- err
 	}
 
-	descriptorWalletNotifierSvc := handler.NewDescriptorWalletNotifierService(notificationSvc)
+	descriptorWalletNotifierSvc := handler.NewDescriptorWalletNotifierHandler(notificationSvc)
+	descriptorWalletNotifierSvc.Start()
+
+	middlewareSvc := middleware.NewMiddlewareService()
+	middlewares := []middleware.Middleware{
+		middleware.LoggingMiddleware,
+		middleware.PanicRecovery,
+	}
 
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc(
 		"/neutrino",
-		descriptorWalletNotifierSvc.HandleSubscriptionRequest,
+		middlewareSvc.WrapHandlerWithMiddlewares(
+			descriptorWalletNotifierSvc.HandleSubscriptionRequest, middlewares...),
 	)
 
 	httpServer := &http.Server{
@@ -89,11 +100,14 @@ func (n *NeutrinoServer) Start(ctx context.Context, stop context.CancelFunc) <-c
 	go func() {
 		<-ctx.Done()
 
-		log.Info("shutdown signal received")
+		log.Info("neutrinod: shutdown signal received")
 
 		ctxTimeout, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 
 		defer func() {
+			descriptorWalletNotifierSvc.Stop()
+			scannerSvc.Stop()
+
 			if err := n.nodeSvc.Stop(); err != nil {
 				errC <- err
 			}
@@ -108,13 +122,13 @@ func (n *NeutrinoServer) Start(ctx context.Context, stop context.CancelFunc) <-c
 			errC <- err
 		}
 
-		log.Info("neutrino-elements daemon server graceful shutdown completed")
+		log.Info("neutrinod: neutrino-elements daemon graceful shutdown completed")
 	}()
 
 	// start http server
 	go func() {
 		log.Infof(
-			"neutrino-elements daemon listening and serving at: %v",
+			"neutrinod: neutrino-elements daemon listening and serving at: %v",
 			n.serverAddress)
 
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {

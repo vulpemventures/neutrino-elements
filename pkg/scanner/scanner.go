@@ -83,7 +83,7 @@ func New(
 }
 
 func (s *scannerService) Start() (<-chan Report, error) {
-	log.Info("starting scanner")
+	log.Debugln("scanner: starting scanner ...")
 
 	if s.started {
 		return nil, fmt.Errorf("scanner already started")
@@ -99,7 +99,7 @@ func (s *scannerService) Start() (<-chan Report, error) {
 }
 
 func (s *scannerService) Stop() {
-	log.Info("stopping scanner")
+	log.Debugln("scanner: stopping scanner ...")
 
 	s.quitCh <- struct{}{}
 	s.started = false
@@ -172,7 +172,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 	for {
 		s.requestsQueue.cond.L.Lock()
 		for s.requestsQueue.isEmpty() {
-			logrus.Debug("scanner queue is empty, waiting for new requests")
+			logrus.Debug("scanner: scanner queue is empty, waiting for new requests")
 			s.requestsQueue.cond.Wait() // wait for new requests
 
 			// check if we should quit the routine

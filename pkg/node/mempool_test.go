@@ -1,7 +1,6 @@
 package node
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/block"
 	"github.com/vulpemventures/go-elements/transaction"
@@ -36,9 +35,7 @@ func TestNewMemPool(t *testing.T) {
 		txs = append(txs, *tx)
 	}
 
-	memPool := NewMemPool(
-		log.InfoLevel,
-	)
+	memPool := NewMemPool()
 
 	memPool.Start()
 

@@ -12,6 +12,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 	"io"
+	"runtime/debug"
 )
 
 const (
@@ -79,7 +80,7 @@ func New(config NodeConfig) (NodeService, error) {
 		blockHeadersCh:   make(chan block.Header),
 		filtersDb:        config.FiltersDB,
 		blockHeadersDb:   config.BlockHeadersDB,
-		memPool:          NewMemPool(log.InfoLevel),
+		memPool:          NewMemPool(),
 		quit:             make(chan struct{}),
 		syncedChan:       make(chan struct{}),
 	}, nil
@@ -128,6 +129,7 @@ func (n node) Start(initialOutboundPeerAddr string) error {
 	go n.monitorPeers()
 	go n.monitorBlockHeaders()
 	go n.monitorCFilters()
+	go n.checkSyncedInitial(initialPeer)
 
 	n.memPool.Start()
 
@@ -160,7 +162,7 @@ func (n *node) getBestPeerForSync() peer.Peer {
 func (n *node) handlePeerMessages(p peer.Peer) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("recovered handlePeerMessages", r)
+			log.Infof("recovered handlePeerMessages: %v", string(debug.Stack()))
 			n.handlePeerMessages(p)
 		}
 	}()
@@ -305,7 +307,7 @@ func (n *node) disconnectPeer(peerID peer.PeerID) {
 	delete(n.Peers, peerID)
 }
 
-// monitorBlockHeaders monitors new block headers comming from peers.
+// monitorBlockHeaders monitors new block headers coming from peers.
 func (n *node) monitorBlockHeaders() {
 	for {
 		select {
@@ -318,7 +320,7 @@ func (n *node) monitorBlockHeaders() {
 				continue
 			}
 
-			fmt.Printf("new block: %v\n", newHeader.Height)
+			log.Debugf("node: new block header: %v\n", newHeader.Height)
 
 			if len(n.Peers) > 0 {
 				hash, err := newHeader.Hash()

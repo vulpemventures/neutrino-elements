@@ -8,7 +8,9 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/internal/core/application"
+	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -16,8 +18,6 @@ import (
 const (
 	pongWait       = 60 * time.Second
 	maxMessageSize = 512
-
-	unspents EventType = "UNSPENT"
 )
 
 var (
@@ -28,32 +28,52 @@ var (
 type descriptorWalletNotifierHandler struct {
 	notificationSvc application.NotificationService
 
-	subscribers     map[SubscriberID]Subscriber
+	// subscribers is a map of subscribers with their IDs as keys and ws conn
+	subscribers map[SubscriberID]Subscriber
+	// subscribersLock is a mutex for subscribers map
 	subscribersLock *sync.RWMutex
-	registerSubs    chan Subscriber
-	unregisterSubs  chan Subscriber
+	// registerSubs is a channel for registering subscribers
+	registerSubs chan Subscriber
+	// unregisterSubs is a channel for unregistering subscribers
+	unregisterSubs chan Subscriber
 
-	internalQuit chan struct{}
-	externalQuit chan struct{}
+	// quit is a channel for stopping handleSubscribers
+	quitHandleSubscribers chan struct{}
+	// quit is a channel for stopping handleSubscribers
+	quitHandleOnChainNotifications chan struct{}
 }
 
-type DescriptorWalletNotifierService interface {
-	HandleSubscriptionRequest(w http.ResponseWriter, req *http.Request)
+type DescriptorWalletNotifierHandler interface {
+	Start()
 	Stop()
+	HandleSubscriptionRequest(w http.ResponseWriter, req *http.Request)
 }
 
-func NewDescriptorWalletNotifierService(
+func NewDescriptorWalletNotifierHandler(
 	notificationSvc application.NotificationService,
-) DescriptorWalletNotifierService {
+) DescriptorWalletNotifierHandler {
 	return &descriptorWalletNotifierHandler{
-		notificationSvc: notificationSvc,
-		subscribers:     make(map[SubscriberID]Subscriber),
-		subscribersLock: new(sync.RWMutex),
-		registerSubs:    make(chan Subscriber),
-		unregisterSubs:  make(chan Subscriber),
-		internalQuit:    make(chan struct{}),
-		externalQuit:    make(chan struct{}),
+		notificationSvc:                notificationSvc,
+		subscribers:                    make(map[SubscriberID]Subscriber),
+		subscribersLock:                new(sync.RWMutex),
+		registerSubs:                   make(chan Subscriber),
+		unregisterSubs:                 make(chan Subscriber),
+		quitHandleSubscribers:          make(chan struct{}),
+		quitHandleOnChainNotifications: make(chan struct{}),
 	}
+}
+
+func (d *descriptorWalletNotifierHandler) Start() {
+	go d.handleOnChainNotifications()
+	go d.handleSubscribers()
+}
+
+func (d *descriptorWalletNotifierHandler) Stop() {
+	d.quitHandleSubscribers <- struct{}{}
+	d.quitHandleOnChainNotifications <- struct{}{}
+	time.Sleep(time.Second) // wait for DescriptorWalletNotifierHandler to stop
+
+	d.notificationSvc.Stop()
 }
 
 func (d *descriptorWalletNotifierHandler) HandleSubscriptionRequest(
@@ -67,13 +87,7 @@ func (d *descriptorWalletNotifierHandler) HandleSubscriptionRequest(
 		return
 	}
 
-	go d.handleOnChainNotifications()
-	go d.handleSubscribers()
 	go d.handleRequest(conn)
-}
-
-func (d *descriptorWalletNotifierHandler) Stop() {
-	d.externalQuit <- struct{}{}
 }
 
 func (d *descriptorWalletNotifierHandler) handleSubscribers() {
@@ -84,31 +98,38 @@ func (d *descriptorWalletNotifierHandler) handleSubscribers() {
 			d.addSubscriberSafe(sub)
 
 		case sub := <-d.unregisterSubs:
-			log.Debugf("subscriber: %v, un-registrated", uuid.UUID(sub.ID).String())
+			log.Infof("subscriber: %v, un-registrated", uuid.UUID(sub.ID).String())
 			d.deleteSubscriberSafe(sub.ID)
+			if err := d.notificationSvc.UnSubscribe(application.Subscriber{
+				ID: application.SubscriberID(sub.ID),
+			}); err != nil {
+				log.Errorf("failed unsubscribing from chain: %v", err.Error())
+			}
 
-		case <-d.internalQuit:
-			log.Debugf("handleSubscribers stopped internally")
-			return
-
-		case <-d.externalQuit:
-			log.Debugf("handleSubscribers stopped externally")
+		case <-d.quitHandleSubscribers:
+			log.Debugf("descriptorWalletNotifierHandler -> handleSubscribers stopped")
 			return
 		}
 	}
 }
 
 func (d *descriptorWalletNotifierHandler) handleOnChainNotifications() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("handleOnChainNotifications recovered from panic: %v", err)
+			log.Tracef("handleOnChainNotifications recovered from panic: %v", string(debug.Stack()))
+		}
+	}()
 	for {
 		select {
 		case eventReport := <-d.notificationSvc.EventReport():
 			subscriber := d.getSubscriberSafe(SubscriberID(eventReport.SubscriberID))
 
-			if err := sendReplyToSubscriber(subscriber, WsOnChainEventResponse{
-				EventType: string(unspents),
+			if err := sendReplyToSubscriber(subscriber, neutrinodtypes.WsOnChainEventResponse{
+				EventType: string(neutrinodtypes.Unspents),
 				TxID:      eventReport.Transaction.TxHash().String(),
 			}); err != nil {
-				log.Error(err)
+				log.Errorf("failed sending response to subscriber: %v", err.Error())
 				continue
 			}
 
@@ -121,19 +142,15 @@ func (d *descriptorWalletNotifierHandler) handleOnChainNotifications() {
 
 			subscriber := d.getSubscriberSafe(SubscriberID(errReport.SubscriberID))
 
-			if err := sendReplyToSubscriber(subscriber, WsMessageErrorResponse{
+			if err := sendReplyToSubscriber(subscriber, neutrinodtypes.WsMessageErrorResponse{
 				ErrorMessage: errReport.ErrorMsg.Error(),
 			}); err != nil {
-				log.Error(err)
+				log.Errorf("failed sending response to subscriber: %v", err.Error())
 				continue
 			}
 
-		case <-d.internalQuit:
-			log.Debugf("handleOnChainNotifications stopped internally")
-			return
-
-		case <-d.externalQuit:
-			log.Debugf("handleOnChainNotifications stopped externally")
+		case <-d.quitHandleOnChainNotifications:
+			log.Debugf("descriptorWalletNotifierHandler -> handleOnChainNotifications stopped")
 			return
 		}
 	}
@@ -142,15 +159,19 @@ func (d *descriptorWalletNotifierHandler) handleOnChainNotifications() {
 func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
+		if err := recover(); err != nil {
+			log.Errorf("handleRequest recovered from panic: %v", err)
+			log.Tracef("handleRequest recovered from panic: %v", string(debug.Stack()))
+		}
 	}()
 
 	conn.SetReadLimit(maxMessageSize)
 	if err := conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
 		if err := conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-			log.Errorf("Error writing close message: %#v\n", err)
+			log.Warnf("Error writing close message: %#v\n", err)
 		}
 
-		log.Error(err)
+		log.Warnf(err.Error())
 		return
 	}
 
@@ -173,14 +194,14 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 		if err != nil {
 			if e, ok := err.(*websocket.CloseError); ok {
 				if e.Code != websocket.CloseNormalClosure {
-					log.Errorf(
+					log.Warnf(
 						"Error reading message: %v, error code: %v\n",
 						e.Text,
 						e.Code,
 					)
 				}
 			} else {
-				log.Errorf("Error reading message: %v\n", err)
+				log.Warnf("Error reading message: %v\n", err)
 			}
 
 			d.unregisterSubs <- Subscriber{
@@ -191,9 +212,9 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 		}
 
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		wsMsg := &WsMessageRequest{}
+		wsMsg := &neutrinodtypes.WsMessageRequest{}
 		if err = json.Unmarshal(message, wsMsg); err != nil {
-			log.Error(err)
+			log.Warn(err)
 			return
 		}
 
@@ -202,7 +223,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 		subscriber := d.getSubscriberSafe(SubscriberID(subsID))
 
 		switch wsMsg.ActionType {
-		case register:
+		case neutrinodtypes.Register:
 			if err := d.notificationSvc.Subscribe(application.Subscriber{
 				ID:               application.SubscriberID(subsID),
 				BlockHeight:      wsMsg.StartBlockHeight,
@@ -211,47 +232,46 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 			}); err != nil {
 				log.Errorf("unsucesfull registration: %v, subscriber: %v", err, subsID)
 
-				if err := sendReplyToSubscriber(subscriber, WsMessageErrorResponse{
+				if err := sendReplyToSubscriber(subscriber, neutrinodtypes.WsMessageErrorResponse{
 					ErrorMessage: err.Error(),
 				}); err != nil {
-					log.Error(err)
+					log.Errorf("failed sending response to subscriber: %v", err.Error())
 					continue
 				}
 			}
 			log.Infof("sucesfull registration, subscriber: %v", subsID)
 
-			if err := sendReplyToSubscriber(subscriber, WsGeneralMessageResponse{
+			if err := sendReplyToSubscriber(subscriber, neutrinodtypes.WsGeneralMessageResponse{
 				Message: "successfully registered",
 			}); err != nil {
-				log.Error(err)
+				log.Errorf("failed sending response to subscriber: %v", err.Error())
 				continue
 			}
-		case unregister:
+		case neutrinodtypes.Unregister:
 			if err := d.notificationSvc.UnSubscribe(application.Subscriber{
 				ID: application.SubscriberID(subsID),
 			}); err != nil {
 				log.Errorf("unsucesfull un-registration: %v, subscriber: %v", err, subsID)
 
-				if err := sendReplyToSubscriber(subscriber, WsMessageErrorResponse{
+				if err := sendReplyToSubscriber(subscriber, neutrinodtypes.WsMessageErrorResponse{
 					ErrorMessage: err.Error(),
 				}); err != nil {
-					log.Error(err)
+					log.Errorf("failed sending response to subscriber: %v", err.Error())
 					continue
 				}
 			}
 
 			log.Infof("sucesfull un-registration: %v, subscriber: %v", err, subsID)
 
-			if err := sendReplyToSubscriber(subscriber, WsGeneralMessageResponse{
+			if err := sendReplyToSubscriber(subscriber, neutrinodtypes.WsGeneralMessageResponse{
 				Message: "successfully un-registered",
 			}); err != nil {
-				log.Error(err)
+				log.Errorf("failed sending response to subscriber: %v", err.Error())
 				continue
 			}
 		default:
 			log.Errorf("unknown action type: %v\n", wsMsg.ActionType)
 		}
-
 	}
 }
 
@@ -276,10 +296,20 @@ func (d *descriptorWalletNotifierHandler) deleteSubscriberSafe(subscriberID Subs
 	delete(d.subscribers, subscriberID)
 }
 
-func sendReplyToSubscriber[V WsMessageErrorResponse | WsOnChainEventResponse | WsGeneralMessageResponse](
+func sendReplyToSubscriber[
+	V neutrinodtypes.WsMessageErrorResponse |
+		neutrinodtypes.WsOnChainEventResponse |
+		neutrinodtypes.WsGeneralMessageResponse](
 	subscriber Subscriber,
 	resp V,
 ) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("sendReplyToSubscriber recovered from panic: %v", err)
+			log.Tracef("sendReplyToSubscriber recovered from panic: %v", string(debug.Stack()))
+		}
+	}()
+
 	r, err := json.Marshal(resp)
 	if err != nil {
 		return fmt.Errorf("sendReplyToSubscriber -> %v", err)
@@ -290,4 +320,11 @@ func sendReplyToSubscriber[V WsMessageErrorResponse | WsOnChainEventResponse | W
 	}
 
 	return nil
+}
+
+type SubscriberID uuid.UUID
+
+type Subscriber struct {
+	ID           SubscriberID
+	WsConnection *websocket.Conn
 }

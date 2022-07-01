@@ -47,6 +47,6 @@ func main() {
 	)
 	errC := elementsNeutrinoServer.Start(ctx, stop)
 	if err := <-errC; err != nil {
-		log.Panicf("neutrino-elements daemon server noticed error while running: %s", err)
+		log.Panicf("neutrinod: neutrino-elements daemon noticed error while running: %s", err)
 	}
 }
