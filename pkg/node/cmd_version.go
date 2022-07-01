@@ -43,7 +43,7 @@ func (n node) handleVersion(header *protocol.MessageHeader, p peer.Peer) error {
 		return err
 	}
 
-	p.SetStartBlockHeight(uint32(version.StartHeight))
+	p.SetPeersTip(uint32(version.StartHeight))
 	if err := n.addPeer(p); err != nil {
 		return err
 	}

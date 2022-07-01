@@ -19,10 +19,10 @@ type Peer interface {
 	Connection() io.ReadWriteCloser
 	// Addr returns the Network Address of the peer
 	Addr() *protocol.Addr
-	// StartBlockHeight returns the block height of the peer
-	StartBlockHeight() uint32
-	// SetStartBlockHeight sets the block height of the peer
-	SetStartBlockHeight(startBlockHeight uint32)
+	// PeersTip returns current tip block height
+	PeersTip() uint32
+	// SetPeersTip sets the block height tip of the peer
+	SetPeersTip(startBlockHeight uint32)
 }
 
 type elementsPeer struct {
@@ -64,14 +64,14 @@ func (e *elementsPeer) Addr() *protocol.Addr {
 	return e.networkAddress
 }
 
-func (e *elementsPeer) StartBlockHeight() uint32 {
+func (e *elementsPeer) PeersTip() uint32 {
 	e.m.RLock()
 	defer e.m.RUnlock()
 
 	return e.startBlockHeight
 }
 
-func (e *elementsPeer) SetStartBlockHeight(startBlockHeight uint32) {
+func (e *elementsPeer) SetPeersTip(startBlockHeight uint32) {
 	e.m.Lock()
 	defer e.m.Unlock()
 

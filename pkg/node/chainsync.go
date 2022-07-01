@@ -10,6 +10,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 	"sync"
+	"time"
 )
 
 var zeroHash [32]byte = [32]byte{
@@ -43,7 +44,7 @@ func (n *node) synced(p peer.Peer) (bool, error) {
 		return false, err
 	}
 
-	if chainTip.Height != p.StartBlockHeight() {
+	if chainTip.Height != p.PeersTip() {
 		return false, nil
 	}
 
@@ -58,13 +59,11 @@ func (n *node) getGenesisBlockHash() (*chainhash.Hash, error) {
 func (n *node) syncWithPeer(peerID peer.PeerID) error {
 	log.Infof("node: syncing block headers with peer: %s ...", peerID)
 
-	peer := n.Peers[peerID]
+	p := n.Peers[peerID]
 
-	if peer == nil {
+	if p == nil {
 		return fmt.Errorf("peer %s not found", peerID)
 	}
-
-	var stopHash [32]byte
 
 	locator, err := n.blockHeadersDb.LatestBlockLocator(context.Background())
 	if err != nil {
@@ -75,25 +74,34 @@ func (n *node) syncWithPeer(peerID peer.PeerID) error {
 			}
 
 			locator = blockchain.BlockLocator{genesisHash}
-			stopHash = zeroHash
 		} else {
 			return err
 		}
-	} else {
-		stopHash = *locator[len(locator)-1]
 	}
+	stopHash := zeroHash
 
 	msg, err := protocol.NewMsgGetHeaders(n.Network, stopHash, locator)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("sending getheaders to peer %s", peerID)
-	if err := n.sendMessage(peer.Connection(), msg); err != nil {
+	log.Debugf("sending getheaders to p %s", peerID)
+	if err := n.sendMessage(p.Connection(), msg); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (n *node) checkSyncedInitial(p peer.Peer) {
+	for {
+		isSynced, _ := n.synced(p)
+		if isSynced {
+			n.notifySynced()
+			return
+		}
+		time.Sleep(time.Second * 1)
+	}
 }
 
 func (n *node) sync(p peer.Peer) {
@@ -106,19 +114,16 @@ func (n *node) sync(p peer.Peer) {
 		}
 	}
 
-	isSynced, _ := n.synced(p)
-	if isSynced {
-		notifySyncedOnce.Do(
-			func() {
-				log.Infof("node: block headers synced with peer: %s", p.ID())
-				n.syncedChan <- struct{}{}
-			},
-		)
-
-		return
-	}
-
 	if err := n.syncWithPeer(p.ID()); err != nil {
 		log.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
 	}
+}
+
+func (n *node) notifySynced() {
+	notifySyncedOnce.Do(
+		func() {
+			log.Debugf("node: syncing block headers finished")
+			n.syncedChan <- struct{}{}
+		},
+	)
 }
