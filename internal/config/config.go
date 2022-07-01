@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/vulpemventures/go-elements/network"
 	"time"
@@ -16,6 +17,8 @@ const (
 	PeerUrlKey = "PEER_URL"
 	// NetworkKey is the network to use. Either liquid, testnet or regtest
 	NetworkKey = "NETWORK"
+	// LogLevelKey are the different logging levels. For reference on the values https://godoc.org/github.com/sirupsen/logrus#Level
+	LogLevelKey = "LOG_LEVEL"
 )
 
 var (
@@ -31,6 +34,7 @@ func LoadConfig() error {
 	vip.SetDefault(ExplorerUrlKey, "http://localhost:3001")
 	vip.SetDefault(PeerUrlKey, "localhost:18886")
 	vip.SetDefault(NetworkKey, network.Regtest.Name)
+	vip.SetDefault(LogLevelKey, int(log.InfoLevel))
 
 	networkName := GetString(NetworkKey)
 	if networkName != network.Liquid.Name &&
@@ -43,6 +47,8 @@ func LoadConfig() error {
 			network.Regtest.Name,
 		)
 	}
+
+	log.SetLevel(log.Level(GetInt(LogLevelKey)))
 
 	return nil
 }
