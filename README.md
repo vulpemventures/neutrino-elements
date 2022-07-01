@@ -10,30 +10,42 @@ Neutrino + Elements
 
 ## Overview
 
-neutrino-elements uses Compact Block Filter (BIP0158) to implement a light client for [elements](https://elementsproject.org/)-based networks.
+Neutrino-elements is a set of useful packages and binaries that can be used to "watch" Liquid side-chain events.<br>
+It uses Compact Block Filter (BIP0158) to implement a light client for [elements](https://elementsproject.org/) based networks.<br>
 
-Two services are provided, they can work independantly:
-- `NodeService` is a full node maintaining an up-to-date state of the block headers + compact filters. The NodeService writes down headers and filters in repositories.
-- `ScannerService` uses filters and headers repositories to handle `ScanRequest` which aims to know if an outpoint (identified by its script) is spent or not. 
+Two packages, that works independently, are provided if you want to build your own light client:<br>
+- `NodeService` is a full node maintaining an up-to-date state of the block headers + compact filters. The NodeService writes down headers and filters in repositories.<br>
+- `ScannerService` uses filters and headers repositories to handle `ScanRequest` which aims to know if an outpoint (identified by its script) is spent or not.<br>
 
-## Getting Started
+Two binaries are provided if you want to use ready light client:<br>
+- `neutrinod` is a daemon that accepts websocket connections on which clients can send requests to watch for events related to wallet-descriptor<br>
+- `neutrino` is a simple command line tool that can be used to watch Liquid side-chain events.<br>
 
-### Build
+## Getting Started with neutrinod
 
-```
-make build
-```
-
-### Unit tests
-
-```
-make test
-```
-
-### Format
+### Build neutrinod & neutrino CLI
 
 ```
-make fmt
+make build-n
+make build-nd
+```
+
+### Start neutrinod
+
+```
+./bin/neutrinod
+```
+
+### Use neutrino CLI
+
+#### Config CLI
+```
+./bin/neutrino config
+```
+
+#### Watch for events related to wallet-descriptor
+```
+./bin/neutrino subscribe --descriptor="{WALLET_DESCRIPTOR}" --block_height={BLOCK_HEIGHT}
 ```
 
 ## License

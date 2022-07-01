@@ -16,9 +16,9 @@ clean:
 	@echo "Cleaning..."
 	@rm -rf ./bin
 
-build:
-	@echo "Building..."
-	@go build -v -o bin/neutrinoelements-cli ./cmd
+build-n:
+	@echo "Building neutrino cli..."
+	@go build -v -o bin/neutrino ./cmd/neutrino
 
 ## build neutrino daemon
 build-nd:
