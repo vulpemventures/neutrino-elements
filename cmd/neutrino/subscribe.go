@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	emptyOnChainMsg = neutrinodtypes.WsOnChainEventResponse{}
-	emptyGeneralMsg = neutrinodtypes.WsGeneralMessageResponse{}
-	emptyErrorMsg   = neutrinodtypes.WsMessageErrorResponse{}
+	emptyOnChainMsg = neutrinodtypes.OnChainEventResponse{}
+	emptyGeneralMsg = neutrinodtypes.GeneralMessageResponse{}
+	emptyErrorMsg   = neutrinodtypes.MessageErrorResponse{}
 )
 
 var subscribeCmd = cli.Command{
@@ -51,7 +51,7 @@ func subscribeAction(ctx *cli.Context) error {
 	blockHeight := ctx.Int("block_height")
 	eventType := ctx.Int("events")
 
-	req := neutrinodtypes.WsMessageRequest{
+	req := neutrinodtypes.SubscriptionRequestWs{
 		ActionType:       neutrinodtypes.Register,
 		EventTypes:       []scanner.EventType{scanner.EventType(eventType)},
 		DescriptorWallet: descriptor,
@@ -73,19 +73,19 @@ func subscribeAction(ctx *cli.Context) error {
 			return err
 		}
 
-		onChainMsg := neutrinodtypes.WsOnChainEventResponse{}
+		onChainMsg := neutrinodtypes.OnChainEventResponse{}
 		if err := json.Unmarshal(message, &onChainMsg); err != nil {
 			log.Error(err.Error())
 			return err
 		}
 
-		generalMsg := neutrinodtypes.WsGeneralMessageResponse{}
+		generalMsg := neutrinodtypes.GeneralMessageResponse{}
 		if err := json.Unmarshal(message, &generalMsg); err != nil {
 			log.Error(err.Error())
 			return err
 		}
 
-		errorMsg := neutrinodtypes.WsMessageErrorResponse{}
+		errorMsg := neutrinodtypes.MessageErrorResponse{}
 		if err := json.Unmarshal(message, &errorMsg); err != nil {
 			log.Error(err.Error())
 			return err

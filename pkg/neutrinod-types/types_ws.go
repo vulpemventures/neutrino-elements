@@ -13,22 +13,22 @@ type EventType string
 
 type ActionType string
 
-type WsMessageRequest struct {
+type SubscriptionRequestWs struct {
 	ActionType       ActionType
 	EventTypes       []scanner.EventType `json:"eventTypes"`
 	DescriptorWallet string              `json:"descriptorWallet"`
 	StartBlockHeight int                 `json:"startBlockHeight"`
 }
 
-type WsOnChainEventResponse struct {
+type OnChainEventResponse struct {
 	EventType string `json:"eventType"`
 	TxID      string `json:"txId"`
 }
 
-type WsGeneralMessageResponse struct {
+type GeneralMessageResponse struct {
 	Message string `json:"message"`
 }
 
-type WsMessageErrorResponse struct {
+type MessageErrorResponse struct {
 	ErrorMessage string `json:"errorMessage"`
 }

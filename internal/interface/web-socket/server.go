@@ -87,9 +87,15 @@ func (n *NeutrinoServer) Start(ctx context.Context, stop context.CancelFunc) <-c
 
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc(
-		"/neutrino",
+		"/neutrino/subscribe/ws",
 		middlewareSvc.WrapHandlerWithMiddlewares(
-			descriptorWalletNotifierSvc.HandleSubscriptionRequest, middlewares...),
+			descriptorWalletNotifierSvc.HandleSubscriptionRequestWs, middlewares...),
+	)
+
+	muxRouter.HandleFunc(
+		"/neutrino/subscribe/http",
+		middlewareSvc.WrapHandlerWithMiddlewares(
+			descriptorWalletNotifierSvc.HandleSubscriptionRequestHttp, middlewares...),
 	)
 
 	httpServer := &http.Server{

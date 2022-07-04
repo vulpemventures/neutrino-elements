@@ -19,9 +19,10 @@ Two packages, that works independently, are provided if you want to build your o
 
 Two binaries are provided if you want to use ready light client:<br>
 - `neutrinod` is a daemon that accepts websocket connections on which clients can send requests to watch for events related to wallet-descriptor<br>
+neutrinod also exposes HTTP endpoint that supports adding webhooks to receive notifications when an event occurs.<br>
 - `neutrino` is a simple command line tool that can be used to watch Liquid side-chain events.<br>
 
-## Getting Started with neutrinod
+## Usage
 
 ### Build neutrinod & neutrino CLI
 
@@ -43,9 +44,15 @@ make build-nd
 ./bin/neutrino config
 ```
 
-#### Watch for events related to wallet-descriptor
+#### Watch for events related to wallet-descriptor(websocket-{HOST:PORT}/neutrino/subscribe/ws) 
 ```
 ./bin/neutrino subscribe --descriptor="{WALLET_DESCRIPTOR}" --block_height={BLOCK_HEIGHT}
+```
+#### Add webhook(http)
+```
+curl -X POST http://localhost:8080/neutrino/subscribe/http \
+   -H 'Content-Type: application/json' \
+   -d '{"ActionType":"register", "eventTypes":[0], "descriptorWallet":"wpkh(037470e26cc774eca62ca19e1a182461a5f3d3680acbc593ce3f38cd142c26c03d)", "startBlockHeight":0, "endpointUrl":"http://127.0.0.1:62900"}'
 ```
 
 ## License

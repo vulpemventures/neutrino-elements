@@ -19,7 +19,7 @@ var configCmd = cli.Command{
 		&cli.StringFlag{
 			Name:  "path",
 			Usage: "neutrino daemon url path",
-			Value: "/neutrino",
+			Value: "/neutrino/subscribe/ws",
 		},
 	},
 	Subcommands: []*cli.Command{

@@ -75,8 +75,8 @@ func (n node) handleHeaders(msgHeader *protocol.MessageHeader, p peer.Peer) erro
 			n.blockHeadersCh <- *v
 		}
 
-		log.Infof("node: local tip: %v\n", headers.Headers[len(headers.Headers)-1].Height)
-		log.Infof("node: peers tip: %v\n", p.PeersTip())
+		log.Debugf("node: local tip: %v", headers.Headers[len(headers.Headers)-1].Height)
+		log.Debugf("node: peers tip: %v", p.PeersTip())
 
 		n.sync(p)
 	}

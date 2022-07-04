@@ -17,28 +17,28 @@ import (
 	"time"
 )
 
-// TestEnd2End tests the neutrino daemon server which listens for new
+// TestEnd2EndWs tests the neutrino daemon server which listens for new
 //websocket connections where it is expected to receive a request to scan
 //wallet descriptor and return new UTXO's for the wallet.
 //In bellow test case two transactions are created for 5 descriptor wallet's and
 //it is expected that neutrino daemon will return 10 new UTXO's events 2 for each wallet
-func (e *E2ESuite) TestEnd2End() {
-	wsRequests := createTxs(e.T())
+func (e *E2ESuite) TestEnd2EndWs() {
+	wsRequests := createWsTxs(e.T())
 
 	wg := sync.WaitGroup{}
 	i := 0
 	for k, v := range wsRequests {
 		wg.Add(1)
-		go func(a string, b neutrinodtypes.WsMessageRequest, i int) {
-			invokeNeutrinoD(i, e.T(), &wg, a, b)
+		go func(a string, b neutrinodtypes.SubscriptionRequestWs, i int) {
+			invokeNeutrinodWs(i, e.T(), &wg, a, b)
 		}(k, v, i)
 		i++
 	}
 	wg.Wait()
 }
 
-func createTxs(t *testing.T) map[string]neutrinodtypes.WsMessageRequest {
-	resp := make(map[string]neutrinodtypes.WsMessageRequest)
+func createWsTxs(t *testing.T) map[string]neutrinodtypes.SubscriptionRequestWs {
+	resp := make(map[string]neutrinodtypes.SubscriptionRequestWs)
 	for i := 0; i < 5; i++ {
 		privkey, err := btcec.NewPrivateKey(btcec.S256())
 		if err != nil {
@@ -49,7 +49,7 @@ func createTxs(t *testing.T) map[string]neutrinodtypes.WsMessageRequest {
 		addr, _ := p2wpkh.WitnessPubKeyHash()
 		wpkhWalletDescriptor := fmt.Sprintf("wpkh(%v)", hex.EncodeToString(pubkey.SerializeCompressed()))
 
-		req := neutrinodtypes.WsMessageRequest{
+		req := neutrinodtypes.SubscriptionRequestWs{
 			ActionType:       "register",
 			EventTypes:       []scanner.EventType{scanner.UnspentUtxo},
 			DescriptorWallet: wpkhWalletDescriptor,
@@ -73,16 +73,16 @@ func createTxs(t *testing.T) map[string]neutrinodtypes.WsMessageRequest {
 	return resp
 }
 
-func invokeNeutrinoD(
+func invokeNeutrinodWs(
 	id int,
 	t *testing.T,
 	wg *sync.WaitGroup,
 	addr string,
-	req neutrinodtypes.WsMessageRequest,
+	req neutrinodtypes.SubscriptionRequestWs,
 ) {
 	defer wg.Done()
 
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/neutrino"}
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/neutrino/subscribe/ws"}
 	t.Logf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -108,7 +108,7 @@ func invokeNeutrinoD(
 				return
 			}
 
-			msg := neutrinodtypes.WsOnChainEventResponse{}
+			msg := neutrinodtypes.OnChainEventResponse{}
 			if err := json.Unmarshal(message, &msg); err != nil {
 				t.Error(err)
 			}
