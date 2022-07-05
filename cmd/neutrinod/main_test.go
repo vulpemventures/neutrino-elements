@@ -4,15 +4,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/gorilla/websocket"
-	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/go-elements/payment"
-	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"log"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/gorilla/websocket"
+	"github.com/vulpemventures/go-elements/network"
+	"github.com/vulpemventures/go-elements/payment"
+	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 )
 
 // TestNeutrinoDaemon tests the neutrino daemon which listens for new
@@ -33,7 +34,7 @@ func TestNeutrinoDaemon(t *testing.T) {
 
 	time.Sleep(time.Second * 3)
 
-	privkey, err := btcec.NewPrivateKey(btcec.S256())
+	privkey, err := btcec.NewPrivateKey()
 	if err != nil {
 		t.Fatal(err)
 	}

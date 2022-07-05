@@ -3,14 +3,15 @@ package scanner_test
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
+	"testing"
+	"time"
+
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
-	"testing"
-	"time"
 )
 
 func TestWatch(t *testing.T) {
@@ -108,7 +109,7 @@ func TestWalletDescriptor(t *testing.T) {
 		"nigiri",
 	)
 
-	privkey, err := btcec.NewPrivateKey(btcec.S256())
+	privkey, err := btcec.NewPrivateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +181,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 			}
 		}
 
-		pk, err := btcec.NewPrivateKey(btcec.S256())
+		pk, err := btcec.NewPrivateKey()
 		if err != nil {
 			t.Fatal(err)
 		}

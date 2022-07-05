@@ -6,14 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/vulpemventures/go-elements/elementsutil"
-	"github.com/vulpemventures/go-elements/transaction"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/vulpemventures/go-elements/elementsutil"
+	"github.com/vulpemventures/go-elements/transaction"
+
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -29,7 +31,7 @@ var (
 )
 
 func createTx() (string, string, error) {
-	privkey, err := btcec.NewPrivateKey(btcec.S256())
+	privkey, err := btcec.NewPrivateKey()
 	if err != nil {
 		return "", "", err
 	}
@@ -53,12 +55,12 @@ func createTx() (string, string, error) {
 	txInputIndex := uint32(utxos[0]["vout"].(float64))
 	txInput := transaction.NewTxInput(txInputHash, txInputIndex)
 
-	receiverValue, _ := elementsutil.SatoshiToElementsValue(60000000)
+	receiverValue, _ := elementsutil.ValueToBytes(60000000)
 	receiverScript := h2b("76a91439397080b51ef22c59bd7469afacffbeec0da12e88ac")
 	receiverOutput := transaction.NewTxOutput(lbtc, receiverValue, receiverScript)
 
 	changeScript := p2wpkh.WitnessScript
-	changeValue, _ := elementsutil.SatoshiToElementsValue(39999500)
+	changeValue, _ := elementsutil.ValueToBytes(39999500)
 	changeOutput := transaction.NewTxOutput(lbtc, changeValue, changeScript)
 
 	// Create a new pset with all the outputs that need to be blinded first
@@ -75,7 +77,7 @@ func createTx() (string, string, error) {
 		return "", "", err
 	}
 
-	witValue, _ := elementsutil.SatoshiToElementsValue(uint64(utxos[0]["value"].(float64)))
+	witValue, _ := elementsutil.ValueToBytes(uint64(utxos[0]["value"].(float64)))
 	witnessUtxo := transaction.NewTxOutput(lbtc, witValue, p2wpkh.WitnessScript)
 	if err := updater.AddInWitnessUtxo(witnessUtxo, 0); err != nil {
 		return "", "", err
@@ -85,7 +87,7 @@ func createTx() (string, string, error) {
 	inBlindingPrvKeys := [][]byte{{}}
 	outBlindingPrvKeys := make([][]byte, 2)
 	for i := range outBlindingPrvKeys {
-		pk, err := btcec.NewPrivateKey(btcec.S256())
+		pk, err := btcec.NewPrivateKey()
 		if err != nil {
 			return "", "", err
 		}
@@ -234,7 +236,7 @@ func blindTransactionByIndex(
 ) error {
 	outBlindPubKeysMap := make(map[int][]byte)
 	for index, k := range outBlindKeysMap {
-		_, pubkey := btcec.PrivKeyFromBytes(btcec.S256(), k)
+		_, pubkey := btcec.PrivKeyFromBytes(k)
 		outBlindPubKeysMap[index] = pubkey.SerializeCompressed()
 	}
 
@@ -332,10 +334,7 @@ func signTransaction(
 			}
 		}
 
-		sig, err := prvkey.Sign(sigHash[:])
-		if err != nil {
-			return err
-		}
+		sig := ecdsa.Sign(prvkey, sigHash[:])
 		sigWithHashType := append(sig.Serialize(), byte(txscript.SigHashAll))
 
 		var witPubkeyScript []byte
@@ -370,7 +369,7 @@ func signTransaction(
 func addFeesToTransaction(p *pset.Pset, feeAmount uint64) {
 	updater, _ := pset.NewUpdater(p)
 	feeScript := []byte{}
-	feeValue, _ := elementsutil.SatoshiToElementsValue(feeAmount)
+	feeValue, _ := elementsutil.ValueToBytes(feeAmount)
 	feeOutput := transaction.NewTxOutput(lbtc, feeValue, feeScript)
 	updater.AddOutput(feeOutput)
 }
