@@ -14,7 +14,7 @@ type EventType string
 type ActionType string
 
 type SubscriptionRequestWs struct {
-	ActionType       ActionType
+	ActionType       ActionType          `json:"actionType"`
 	EventTypes       []scanner.EventType `json:"eventTypes"`
 	DescriptorWallet string              `json:"descriptorWallet"`
 	StartBlockHeight int                 `json:"startBlockHeight"`
