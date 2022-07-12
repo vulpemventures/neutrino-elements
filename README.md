@@ -76,7 +76,6 @@ To subscribe to events related to wallet-descriptor using web-socket connection,
     "eventTypes":["unspentUtxo"], 
     "descriptorWallet":"{WALLET_DESCRIPTOR}", 
     "startBlockHeight":"{START_BLOCK_HEIGHT}", 
-    "endpointUrl":"{ENDPOINT_URL}"
 }
 ```
 to the following endpoint:
