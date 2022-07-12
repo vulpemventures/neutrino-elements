@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/gorilla/websocket"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -39,7 +39,7 @@ func (e *E2ESuite) TestEnd2EndWs() {
 func createWsTxs(t *testing.T) map[string]neutrinodtypes.SubscriptionRequestWs {
 	resp := make(map[string]neutrinodtypes.SubscriptionRequestWs)
 	for i := 0; i < 5; i++ {
-		privkey, err := btcec.NewPrivateKey(btcec.S256())
+		privkey, err := btcec.NewPrivateKey()
 		if err != nil {
 			t.Fatal(err)
 		}

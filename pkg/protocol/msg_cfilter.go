@@ -3,12 +3,13 @@ package protocol
 import (
 	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/btcsuite/btcd/btcutil/gcs"
+	"github.com/btcsuite/btcd/btcutil/gcs/builder"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil/gcs"
-	"github.com/btcsuite/btcutil/gcs/builder"
 	"github.com/vulpemventures/neutrino-elements/pkg/binary"
 )
 

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
@@ -83,7 +83,7 @@ loop:
 func createHttpTxs(t *testing.T) []neutrinodtypes.SubscriptionRequestHttp {
 	resp := make([]neutrinodtypes.SubscriptionRequestHttp, 0)
 	for i := 0; i < len(neutrinoClients); i++ {
-		privkey, err := btcec.NewPrivateKey(btcec.S256())
+		privkey, err := btcec.NewPrivateKey()
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+
 	"github.com/vulpemventures/go-elements/descriptor"
 
+	"github.com/btcsuite/btcd/btcutil/gcs/builder"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil/gcs/builder"
 	"github.com/sirupsen/logrus"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
