@@ -9,7 +9,6 @@ import (
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
-	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"net/url"
 	"sync"
@@ -51,7 +50,7 @@ func createWsTxs(t *testing.T) map[string]neutrinodtypes.SubscriptionRequestWs {
 
 		req := neutrinodtypes.SubscriptionRequestWs{
 			ActionType:       "register",
-			EventTypes:       []scanner.EventType{scanner.UnspentUtxo},
+			EventTypes:       []neutrinodtypes.EventType{neutrinodtypes.UnspentUtxo},
 			DescriptorWallet: wpkhWalletDescriptor,
 			StartBlockHeight: 0,
 		}
@@ -82,7 +81,7 @@ func invokeNeutrinodWs(
 ) {
 	defer wg.Done()
 
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/neutrino/subscribe/ws"}
+	u := url.URL{Scheme: "ws", Host: "localhost:8000", Path: "/neutrino/subscribe/ws"}
 	t.Logf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)

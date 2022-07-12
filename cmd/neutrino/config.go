@@ -14,7 +14,7 @@ var configCmd = cli.Command{
 		&cli.StringFlag{
 			Name:  "url",
 			Usage: "neutrino daemon address host:port",
-			Value: "localhost:8080",
+			Value: "localhost:8000",
 		},
 		&cli.StringFlag{
 			Name:  "path",

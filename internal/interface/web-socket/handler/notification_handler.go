@@ -85,7 +85,7 @@ func (d *descriptorWalletNotifierHandler) handleSubscribers() {
 			d.addSubscriberSafe(sub)
 
 		case sub := <-d.unregisterSubs:
-			log.Infof("subscriber: %v, un-registrated", uuid.UUID(sub.SubscriberID()).String())
+			log.Infof("subscriber: %v, un-registered", uuid.UUID(sub.SubscriberID()).String())
 			d.deleteSubscriberSafe(sub.SubscriberID())
 			if err := d.notificationSvc.UnSubscribe(application.Subscriber{
 				ID: application.SubscriberID(sub.SubscriberID()),
@@ -112,8 +112,14 @@ func (d *descriptorWalletNotifierHandler) handleOnChainNotifications() {
 		case eventReport := <-d.notificationSvc.EventReport():
 			subscriber := d.getSubscriberSafe(SubscriberID(eventReport.SubscriberID))
 
+			eventType, err := neutrinodtypes.FromScannerEventTypeToNeutrinodType(eventReport.EventType)
+			if err != nil {
+				log.Errorf("failed to convert FromScannerEventTypeToNeutrinodType: %v", err.Error())
+				continue
+			}
+
 			response := neutrinodtypes.OnChainEventResponse{
-				EventType: string(neutrinodtypes.Unspents),
+				EventType: eventType,
 				TxID:      eventReport.Transaction.TxHash().String(),
 			}
 

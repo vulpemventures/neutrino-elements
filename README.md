@@ -46,58 +46,62 @@ make test
 ### Run neutrinod
 
 ```
-./bin/neutrinod
+./neutrinod
 ```
 
 ### Config CLI
 ```
-./bin/neutrino config
+./neutrino config
 ```
 
 ### Watch for events related to wallet-descriptor(websocket-{HOST:PORT}/neutrino/subscribe/ws) 
 ```
-./bin/neutrino subscribe --descriptor="{WALLET_DESCRIPTOR}" --block_height={BLOCK_HEIGHT}
+./neutrino subscribe --descriptor="{WALLET_DESCRIPTOR}" --block_height={BLOCK_HEIGHT} --events=unspentUtxo
 ```
 ### Add webhook(http)
-```
-curl -X POST http://localhost:8080/neutrino/subscribe/http \
+```sh
+curl -X POST http://localhost:8000/neutrino/subscribe/http \
    -H 'Content-Type: application/json' \
-   -d '{"actionType":"register", "eventTypes":[0], "descriptorWallet":"wpkh(037470e26cc774eca62ca19e1a182461a5f3d3680acbc593ce3f38cd142c26c03d)", "startBlockHeight":0, "endpointUrl":"http://127.0.0.1:62900"}'
+   -d '{"actionType":"register", "eventTypes":["unspentUtxo"], "descriptorWallet":"wpkh(037470e26cc774eca62ca19e1a182461a5f3d3680acbc593ce3f38cd142c26c03d)", "startBlockHeight":0, "endpointUrl":"http://127.0.0.1:62900"}'
 ```
 
 ## API
 Neutrinod can be used to subscribe to events related to wallet-descriptor using web-socket or by registrating webhook using HTTP.<br>
 
 ### Web-socket
-To subscribe to events related to wallet-descriptor using web-socket connection, send bellow json :<br>
-```
+To subscribe to events related to wallet-descriptor using web-socket connection, send below json :<br>
+```json
 {
     "actionType":"register", 
-    "eventTypes":[0], 
+    "eventTypes":["unspentUtxo"], 
     "descriptorWallet":"{WALLET_DESCRIPTOR}", 
-    "startBlockHeight":{START_BLOCK_HEIGHT}, 
+    "startBlockHeight":"{START_BLOCK_HEIGHT}", 
     "endpointUrl":"{ENDPOINT_URL}"
 }
 ```
 to the following endpoint:
 ```
-{HOST}:8080/neutrino/subscribe/ws
+/neutrino/subscribe/ws
 ```
 
 ### HTTP 
 To register webhook, send bellow json :<br>
-```
+```json
 {
-    "ActionType":"register", 
-    "eventTypes":[0], 
-    "descriptorWallet":"{WALLET_DESCRIPTOR}", 
-    "startBlockHeight":{START_BLOCK_HEIGHT}, 
-    "endpointUrl":"{ENDPOINT_URL}"
+  "actionType": "register",
+  "eventTypes": ["unspentUtxo"],
+  "descriptorWallet": "{WALLET_DESCRIPTOR}",
+  "startBlockHeight": "{START_BLOCK_HEIGHT}",
+  "endpointUrl": "{ENDPOINT_URL}"
+}
 ```
 to the following endpoint:
 ```
-{HOST}:8080/neutrino/subscribe/http
+/neutrino/subscribe/http
 ```
+
+Valid actionTypes: "register", "unregister"<br>
+Valid eventTypes: "unspentUtxo", "spentUtxo"<br>
 
 ## License
 

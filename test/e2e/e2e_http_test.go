@@ -129,7 +129,7 @@ func invokeNeutrinodHttp(
 		t.Fatal(err)
 	}
 
-	resp, err := http.Post("http://localhost:8080/neutrino/subscribe/http", "application/json", bytes.NewBuffer(reqBytes))
+	resp, err := http.Post("http://localhost:8000/neutrino/subscribe/http", "application/json", bytes.NewBuffer(reqBytes))
 	if err != nil {
 		t.Fatal(err)
 	}

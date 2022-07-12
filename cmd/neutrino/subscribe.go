@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
-	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 )
 
 var (
@@ -30,12 +29,11 @@ var subscribeCmd = cli.Command{
 			Usage:    "block height to watch from",
 			Required: true,
 		},
-		&cli.IntFlag{
+		&cli.StringSliceFlag{
 			Name: "events",
 			Usage: "events to watch for:\n" +
-				"	0 -> unspent utxo\n" +
-				"	1 -> spent utxo\n",
-			Value: 0,
+				"	unspentUtxo -> unspent utxo\n" +
+				"	spentUtxo -> spent utxo\n",
 		},
 	},
 }
@@ -49,11 +47,16 @@ func subscribeAction(ctx *cli.Context) error {
 
 	descriptor := ctx.String("descriptor")
 	blockHeight := ctx.Int("block_height")
-	eventType := ctx.Int("events")
+
+	eventsType := ctx.StringSlice("events")
+	events := make([]neutrinodtypes.EventType, 0, len(eventsType))
+	for _, v := range eventsType {
+		events = append(events, neutrinodtypes.EventType(v))
+	}
 
 	req := neutrinodtypes.SubscriptionRequestWs{
 		ActionType:       neutrinodtypes.Register,
-		EventTypes:       []scanner.EventType{scanner.EventType(eventType)},
+		EventTypes:       events,
 		DescriptorWallet: descriptor,
 		StartBlockHeight: blockHeight,
 	}

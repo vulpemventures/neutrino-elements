@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/internal/core/application"
 	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
+	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 	"net/http"
 	"runtime/debug"
 )
@@ -45,6 +46,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 
 	log.Debugf("new ws subscriber connected: %v", subsID)
 
+msgloop:
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -78,12 +80,31 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 
 		subscriber := d.getSubscriberSafe(SubscriberID(subsID)).(*WsSubscriber)
 
+		events := make([]scanner.EventType, 0, len(wsMsg.EventTypes))
+		for _, v := range wsMsg.EventTypes {
+			eventType, err := neutrinodtypes.FromNeutrinodTypeToScannerEventType(v)
+			if err != nil {
+				log.Errorf("unsucesfull conversion FromNeutrinodTypeToScannerEventType %v", err)
+
+				if err := sendResponseToSubscriberWs(*subscriber, neutrinodtypes.MessageErrorResponse{
+					ErrorMessage: "irregular event type",
+				}); err != nil {
+					log.Errorf("failed sending response to subscriber: %v", err.Error())
+					goto msgloop
+				}
+
+				goto msgloop
+			}
+
+			events = append(events, eventType)
+		}
+
 		switch wsMsg.ActionType {
 		case neutrinodtypes.Register:
 			if err := d.notificationSvc.Subscribe(application.Subscriber{
 				ID:               application.SubscriberID(subsID),
 				BlockHeight:      wsMsg.StartBlockHeight,
-				Events:           wsMsg.EventTypes,
+				Events:           events,
 				WalletDescriptor: wsMsg.DescriptorWallet,
 			}); err != nil {
 				log.Errorf("unsucesfull registration: %v, subscriber: %v", err, subsID)
@@ -92,7 +113,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 					ErrorMessage: err.Error(),
 				}); err != nil {
 					log.Errorf("failed sending response to subscriber: %v", err.Error())
-					continue
+					goto msgloop
 				}
 			}
 			log.Infof("sucesfull registration, subscriber: %v", subsID)
@@ -101,7 +122,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 				Message: "successfully registered",
 			}); err != nil {
 				log.Errorf("failed sending response to subscriber: %v", err.Error())
-				continue
+				goto msgloop
 			}
 		case neutrinodtypes.Unregister:
 			if err := d.notificationSvc.UnSubscribe(application.Subscriber{
@@ -113,7 +134,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 					ErrorMessage: err.Error(),
 				}); err != nil {
 					log.Errorf("failed sending response to subscriber: %v", err.Error())
-					continue
+					goto msgloop
 				}
 			}
 
@@ -123,7 +144,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 				Message: "successfully un-registered",
 			}); err != nil {
 				log.Errorf("failed sending response to subscriber: %v", err.Error())
-				continue
+				goto msgloop
 			}
 		default:
 			log.Errorf("unknown action type: %v\n", wsMsg.ActionType)
@@ -132,9 +153,9 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 }
 
 func sendResponseToSubscriberWs[
-V neutrinodtypes.MessageErrorResponse |
-neutrinodtypes.OnChainEventResponse |
-neutrinodtypes.GeneralMessageResponse](
+	V neutrinodtypes.MessageErrorResponse |
+		neutrinodtypes.OnChainEventResponse |
+		neutrinodtypes.GeneralMessageResponse](
 	subscriber WsSubscriber,
 	resp V,
 ) error {
