@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	pongWait       = 60 * time.Second
 	maxMessageSize = 512
 
 	wsType   SubscriberType = "ws"

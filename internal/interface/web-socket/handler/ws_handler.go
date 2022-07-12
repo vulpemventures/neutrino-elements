@@ -11,7 +11,6 @@ import (
 	neutrinodtypes "github.com/vulpemventures/neutrino-elements/pkg/neutrinod-types"
 	"net/http"
 	"runtime/debug"
-	"time"
 )
 
 func (d *descriptorWalletNotifierHandler) HandleSubscriptionRequestWs(
@@ -36,22 +35,7 @@ func (d *descriptorWalletNotifierHandler) handleRequest(conn *websocket.Conn) {
 			log.Tracef("handleRequest recovered from panic: %v", string(debug.Stack()))
 		}
 	}()
-
 	conn.SetReadLimit(maxMessageSize)
-	if err := conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-		if err := conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-			log.Warnf("Error writing close message: %#v\n", err)
-		}
-
-		log.Warnf(err.Error())
-		return
-	}
-
-	conn.SetPongHandler(
-		func(string) error {
-			return conn.SetReadDeadline(time.Now().Add(pongWait))
-		},
-	)
 
 	subsID := uuid.New()
 	d.registerSubs <- &WsSubscriber{
