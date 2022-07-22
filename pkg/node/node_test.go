@@ -1,8 +1,8 @@
 package node_test
 
 import (
+	"github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/inmemory"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
-	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"testing"
 	"time"

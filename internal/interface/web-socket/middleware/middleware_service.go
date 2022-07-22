@@ -1,15 +1,21 @@
 package middleware
 
-import "net/http"
+import (
+	dbpg "github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/pg"
+	"net/http"
+)
 
 type Service interface {
 	WrapHandlerWithMiddlewares(
 		handlerFunc http.HandlerFunc,
 		middlewares ...Middleware,
 	) http.HandlerFunc
+	LoggingMiddleware(next http.HandlerFunc) http.HandlerFunc
+	PanicRecovery(next http.HandlerFunc) http.HandlerFunc
 }
 
 type middlewareService struct {
+	dbSvc dbpg.DbService
 }
 
 type Middleware func(handlerFunc http.HandlerFunc) http.HandlerFunc

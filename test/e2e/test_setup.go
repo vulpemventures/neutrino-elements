@@ -16,6 +16,9 @@ type E2ESuite struct {
 }
 
 func (e *E2ESuite) SetupSuite() {
+	e.T().Setenv("NEUTRINO_ELEMENTS_DB_NAME", "neutrino-elements-test")
+	e.T().Setenv("NEUTRINO_ELEMENTS_DB_MIGRATION_PATH", "file://../../internal/infrastructure/storage/db/pg/migration")
+
 	n, err := testutil.RunCommandDetached("../../bin/neutrinod")
 	if err != nil {
 		e.FailNow(err.Error())

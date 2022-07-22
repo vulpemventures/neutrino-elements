@@ -35,11 +35,6 @@ func (n node) handleBlock(header *protocol.MessageHeader, p peer.Peer) error {
 		}
 	}
 
-	//receivedTip := msgBlock.Header.Height
-	//if receivedTip == tip.Height {
-	//	n.notifySynced()
-	//}
-
 	//if new block arrives before sync is done and if it is greater than peer
 	//start height update height so that we can sync till this height
 	//eg. when node starts syncing and peer start height(tip) is 50000,

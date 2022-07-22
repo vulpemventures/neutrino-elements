@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/inmemory"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,7 +23,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
-	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 
 	"github.com/btcsuite/btcd/btcec/v2"
@@ -239,6 +239,19 @@ func BlindTransaction(
 	}
 
 	return BlindTransactionByIndex(p, inBlindKeys, outputsPrivKeyByIndex, issuanceBlindKeys)
+}
+
+func GetRawBlock(hash string) ([]byte, error) {
+	url := fmt.Sprintf("%s/block/%s/raw", baseURL, hash)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func BlindTransactionByIndex(

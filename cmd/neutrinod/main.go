@@ -4,10 +4,10 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/internal/config"
+	dbpg "github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/pg"
 	neutrinodws "github.com/vulpemventures/neutrino-elements/internal/interface/web-socket"
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
-	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,8 +18,29 @@ func main() {
 		log.Fatal(err)
 	}
 
-	repoFilter := inmemory.NewFilterInmemory()
-	repoHeader := inmemory.NewHeaderInmemory()
+	dbManager, err := dbpg.NewDbService(dbpg.DbConfig{
+		DbUser:             config.GetString(config.DbUserKey),
+		DbPassword:         config.GetString(config.DbPassKey),
+		DbHost:             config.GetString(config.DbHostKey),
+		DbPort:             config.GetInt(config.DbPortKey),
+		DbName:             config.GetString(config.DbNameKey),
+		MigrationSourceURL: config.GetString(config.DbMigrationPath),
+		DbInsecure:         config.GetBool(config.DbInsecure),
+		AwsRegion:          config.GetString(config.AwsRegion),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	repoFilter, err := dbpg.NewFilterRepositoryImpl(dbManager)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	repoHeader, err := dbpg.NewHeaderRepositoryImpl(dbManager)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	nodeCfg := node.NodeConfig{
 		Network:        config.GetString(config.NetworkKey),

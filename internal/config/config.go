@@ -19,6 +19,22 @@ const (
 	NetworkKey = "NETWORK"
 	// LogLevelKey are the different logging levels. For reference on the values https://godoc.org/github.com/sirupsen/logrus#Level
 	LogLevelKey = "LOG_LEVEL"
+	// DbUserKey is user used to connect to db
+	DbUserKey = "DB_USER"
+	// DbPassKey is password used to connect to db
+	DbPassKey = "DB_PASS"
+	// DbHostKey is host where db is installed
+	DbHostKey = "DB_HOST"
+	// DbPortKey is port on which db is listening
+	DbPortKey = "DB_PORT"
+	// DbNameKey is name of database
+	DbNameKey = "DB_NAME"
+	// DbMigrationPath is the path to migration files
+	DbMigrationPath = "DB_MIGRATION_PATH"
+	// DbInsecure is used to define db connection url
+	DbInsecure = "DB_INSECURE"
+	// AwsRegion is AWS region in which RDS is running
+	AwsRegion = "AWSREGION"
 )
 
 var (
@@ -27,7 +43,7 @@ var (
 
 func LoadConfig() error {
 	vip = viper.New()
-	vip.SetEnvPrefix("NEUTRINO")
+	vip.SetEnvPrefix("NEUTRINO_ELEMENTS")
 	vip.AutomaticEnv()
 
 	vip.SetDefault(NeutrinoDUrlKey, "localhost:8000")
@@ -35,6 +51,14 @@ func LoadConfig() error {
 	vip.SetDefault(PeerUrlKey, "localhost:18886")
 	vip.SetDefault(NetworkKey, network.Regtest.Name)
 	vip.SetDefault(LogLevelKey, int(log.InfoLevel))
+	vip.SetDefault(DbUserKey, "root")
+	vip.SetDefault(DbPassKey, "secret")
+	vip.SetDefault(DbHostKey, "127.0.0.1")
+	vip.SetDefault(DbPortKey, 5432)
+	vip.SetDefault(DbNameKey, "neutrino-elements")
+	vip.SetDefault(DbMigrationPath, "file://internal/infrastructure/storage/db/pg/migration")
+	vip.SetDefault(DbInsecure, true)
+	vip.SetDefault(AwsRegion, "eu-central-1")
 
 	networkName := GetString(NetworkKey)
 	if networkName != network.Liquid.Name &&

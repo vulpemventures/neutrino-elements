@@ -81,8 +81,8 @@ func (n *NeutrinoServer) Start(ctx context.Context, stop context.CancelFunc) <-c
 
 	middlewareSvc := middleware.NewMiddlewareService()
 	middlewares := []middleware.Middleware{
-		middleware.LoggingMiddleware,
-		middleware.PanicRecovery,
+		middlewareSvc.LoggingMiddleware,
+		middlewareSvc.PanicRecovery,
 	}
 
 	muxRouter := mux.NewRouter()
