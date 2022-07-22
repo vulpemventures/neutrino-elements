@@ -31,10 +31,6 @@ const (
 	DbNameKey = "DB_NAME"
 	// DbMigrationPath is the path to migration files
 	DbMigrationPath = "DB_MIGRATION_PATH"
-	// DbInsecure is used to define db connection url
-	DbInsecure = "DB_INSECURE"
-	// AwsRegion is AWS region in which RDS is running
-	AwsRegion = "AWSREGION"
 )
 
 var (
@@ -46,7 +42,7 @@ func LoadConfig() error {
 	vip.SetEnvPrefix("NEUTRINO_ELEMENTS")
 	vip.AutomaticEnv()
 
-	vip.SetDefault(NeutrinoDUrlKey, "localhost:8000")
+	vip.SetDefault(NeutrinoDUrlKey, ":8000")
 	vip.SetDefault(ExplorerUrlKey, "http://localhost:3001")
 	vip.SetDefault(PeerUrlKey, "localhost:18886")
 	vip.SetDefault(NetworkKey, network.Regtest.Name)
@@ -57,8 +53,6 @@ func LoadConfig() error {
 	vip.SetDefault(DbPortKey, 5432)
 	vip.SetDefault(DbNameKey, "neutrino-elements")
 	vip.SetDefault(DbMigrationPath, "file://internal/infrastructure/storage/db/pg/migration")
-	vip.SetDefault(DbInsecure, true)
-	vip.SetDefault(AwsRegion, "eu-central-1")
 
 	networkName := GetString(NetworkKey)
 	if networkName != network.Liquid.Name &&

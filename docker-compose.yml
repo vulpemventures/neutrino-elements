@@ -1,0 +1,40 @@
+version: "3.7"
+services:
+  neutrinod-db:
+    container_name: neutrinod-db
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./pg-data:/var/lib/postgresql/data
+    networks:
+      - nigiri
+
+  neutrinod:
+    container_name: neutrinod
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - pg
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      NEUTRINO_ELEMENTS_DB_HOST: neutrinod-db
+      NEUTRINO_ELEMENTS_DB_PORT: 5432
+      NEUTRINO_ELEMENTS_EXPLORER_URL: http://chopsticks-liquid:3000
+      NEUTRINO_ELEMENTS_PEER_URL: liquid:18886
+    networks:
+      - nigiri
+
+networks:
+  nigiri:
+    external: true
+
+

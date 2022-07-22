@@ -25,8 +25,6 @@ func main() {
 		DbPort:             config.GetInt(config.DbPortKey),
 		DbName:             config.GetString(config.DbNameKey),
 		MigrationSourceURL: config.GetString(config.DbMigrationPath),
-		DbInsecure:         config.GetBool(config.DbInsecure),
-		AwsRegion:          config.GetString(config.AwsRegion),
 	})
 	if err != nil {
 		log.Fatal(err)

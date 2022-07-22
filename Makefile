@@ -63,6 +63,10 @@ recreatedb: dropdb createdb droptestdb createtestdb
 ## recreatetestdb: drop and create test db
 recreatetestdb: droptestdb createtestdb
 
+## pgcreatedb: starts docker container and creates dev and test db, used in CI
+pgcreatedb:
+	pg && createdb && createtestdb
+
 ## psql: connects to postgres terminal running inside docker container
 psql:
 	docker exec -it neutrino-elements-pg psql -U root -d neutrino-elements
@@ -70,3 +74,10 @@ psql:
 ## wpkh: creates el_wpkh wallet descriptor based on funded addresses pub_key
 wpkh:
 	go run ./script/fund_wpkh.go
+
+## dev: run neutrinod and postgres
+dev:
+	export POSTGRES_USER=root; \
+	export POSTGRES_PASSWORD=secret; \
+	export POSTGRES_DB=neutrino-elements; \
+	docker-compose up -d --build

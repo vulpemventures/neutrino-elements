@@ -8,8 +8,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -44,8 +42,6 @@ type DbConfig struct {
 	DbPort             int
 	DbName             string
 	MigrationSourceURL string
-	DbInsecure         bool
-	AwsRegion          string
 }
 
 func NewDbService(dbConfig DbConfig) (*DbService, error) {
@@ -64,14 +60,7 @@ func NewDbService(dbConfig DbConfig) (*DbService, error) {
 }
 
 func connect(dbConfig DbConfig) (*sqlx.DB, error) {
-	dataSource, err := dataSourceStr(dbConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	if dbConfig.DbInsecure {
-		dataSource = insecureDataSourceStr(dbConfig)
-	}
+	dataSource := insecureDataSourceStr(dbConfig)
 
 	db, err := sqlx.Connect(
 		postgresDriver,
@@ -116,34 +105,6 @@ func insecureDataSourceStr(dbConfig DbConfig) string {
 		dbConfig.DbPort,
 		dbConfig.DbName,
 	)
-}
-
-// dataSourceStr converts database configuration params to connection string
-func dataSourceStr(dbConfig DbConfig) (string, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return "", err
-	}
-
-	authenticationToken, err := auth.BuildAuthToken(
-		context.TODO(),
-		fmt.Sprintf("%s:%d", dbConfig.DbHost, dbConfig.DbPort),
-		dbConfig.AwsRegion,
-		dbConfig.DbUser,
-		cfg.Credentials,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf(
-		dataSourceTemplate,
-		dbConfig.DbHost,
-		dbConfig.DbPort,
-		dbConfig.DbUser,
-		authenticationToken,
-		dbConfig.DbName,
-	), nil
 }
 
 // CreateLoader creates loader that is to be used to load fixtures from given

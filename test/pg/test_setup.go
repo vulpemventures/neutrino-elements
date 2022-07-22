@@ -28,7 +28,6 @@ func (s *PgDbTestSuite) SetupSuite() {
 		DbName:     "neutrino-elements-test",
 		MigrationSourceURL: "file://../.." +
 			"/internal/infrastructure/storage/db/pg/migration",
-		DbInsecure: true,
 	})
 	if err != nil {
 		s.FailNow(err.Error())
