@@ -65,8 +65,8 @@ recreatetestdb: droptestdb createtestdb
 
 ## pgcreatedb: starts docker container and creates dev and test db, used in CI
 pgcreatedb:
-	pg && createdb && createtestdb
-
+	chmod u+x ./script/create_db
+	./script/create_db
 ## psql: connects to postgres terminal running inside docker container
 psql:
 	docker exec -it neutrino-elements-pg psql -U root -d neutrino-elements
