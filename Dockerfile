@@ -28,11 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /neutrino-elements/bin/neutrinod .
-COPY --from=builder /neutrino-elements/bin/neutrino .
+COPY --from=builder /neutrino-elements/bin/* /usr/local/bin/
 COPY --from=builder /neutrino-elements/internal/infrastructure/storage/db/pg/migration/* .
 
-RUN install neutrino /bin
-RUN install neutrinod /bin
-
-ENTRYPOINT ["./neutrinod"]
+ENTRYPOINT ["neutrinod"]
