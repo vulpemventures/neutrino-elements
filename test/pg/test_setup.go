@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	dbpg "github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/pg"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 )
 
 var (
@@ -20,6 +21,10 @@ type PgDbTestSuite struct {
 }
 
 func (s *PgDbTestSuite) SetupSuite() {
+	if err := testutil.SetupDB(); err != nil {
+		s.FailNow(err.Error())
+	}
+
 	d, err := dbpg.NewDbService(dbpg.DbConfig{
 		DbUser:     "root",
 		DbPassword: "secret",
@@ -35,10 +40,10 @@ func (s *PgDbTestSuite) SetupSuite() {
 	dbSvc = d
 
 	if dbSvc != nil {
-		err := dbSvc.CreateLoader(dbSvc.Db.DB)
-		if err != nil {
-			s.FailNow(err.Error())
-		}
+		//err := dbSvc.CreateLoader(dbSvc.Db.DB)
+		//if err != nil {
+		//	s.FailNow(err.Error())
+		//}
 	}
 
 	fr, err := dbpg.NewFilterRepositoryImpl(dbSvc)
@@ -59,12 +64,16 @@ func (s *PgDbTestSuite) TearDownSuite() {
 	if err != nil {
 		s.FailNow(err.Error())
 	}
+
+	if err := testutil.SetupDB(); err != nil {
+		s.FailNow(err.Error())
+	}
 }
 
 func (s *PgDbTestSuite) BeforeTest(suiteName, testName string) {
-	if err := dbSvc.LoadFixtures(); err != nil {
-		s.FailNow(err.Error())
-	}
+	//if err := dbSvc.LoadFixtures(); err != nil {
+	//	s.FailNow(err.Error())
+	//}
 }
 
 func (s *PgDbTestSuite) AfterTest(suiteName, testName string) {

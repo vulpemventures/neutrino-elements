@@ -16,6 +16,10 @@ type E2ESuite struct {
 }
 
 func (e *E2ESuite) SetupSuite() {
+	if err := testutil.SetupDB(); err != nil {
+		e.FailNow(err.Error())
+	}
+
 	e.T().Setenv("NEUTRINO_ELEMENTS_DB_NAME", "neutrino-elements-test")
 	e.T().Setenv("NEUTRINO_ELEMENTS_DB_MIGRATION_PATH", "file://../../internal/infrastructure/storage/db/pg/migration")
 
@@ -30,6 +34,10 @@ func (e *E2ESuite) SetupSuite() {
 
 func (e *E2ESuite) TearDownSuite() {
 	if err := neutrinod.Process.Kill(); err != nil {
+		e.FailNow(err.Error())
+	}
+
+	if err := testutil.ShutdownDB(); err != nil {
 		e.FailNow(err.Error())
 	}
 }

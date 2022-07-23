@@ -39,7 +39,11 @@ func (n *node) synced(p peer.Peer) (bool, error) {
 		return false, err
 	}
 
-	if chainTip.Height != p.PeersTip() {
+	log.Debugf("node: tipHasAllAncestors: %v", tipHasAllAncestors)
+	log.Debugf("node: chainTip: %v", chainTip.Height)
+	log.Debugf("node: PeersTip: %v", p.PeersTip())
+
+	if chainTip.Height < p.PeersTip() {
 		return false, nil
 	}
 
@@ -90,6 +94,7 @@ func (n *node) syncWithPeer(peerID peer.PeerID) error {
 
 func (n *node) checkSyncedInitial(p peer.Peer) {
 	for {
+		log.Debug("node: checkSynced")
 		isSynced, _ := n.synced(p)
 		if isSynced {
 			n.notifySynced()
@@ -115,6 +120,7 @@ func (n *node) sync(p peer.Peer) {
 }
 
 func (n *node) notifySynced() {
+	log.Debug("node: notifySynced")
 	n.notifySyncedOnce.Do(
 		func() {
 			log.Debugf("node: syncing block headers finished")

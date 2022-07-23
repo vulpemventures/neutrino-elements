@@ -33,6 +33,9 @@ func (n node) handleHeaders(msgHeader *protocol.MessageHeader, p peer.Peer) erro
 		}
 	}
 
+	log.Debugf("node: received %d headers from peer %s", len(headers.Headers), p.ID())
+	log.Debugf("node: tip height: %d", tip.Height)
+
 	if len(headers.Headers) == 0 {
 		return nil
 	}

@@ -11,6 +11,7 @@ type scanRequestQueue struct {
 }
 
 func newScanRequestQueue() *scanRequestQueue {
+
 	return &scanRequestQueue{
 		requests: make([]*ScanRequest, 0),
 		locker:   new(sync.Mutex),

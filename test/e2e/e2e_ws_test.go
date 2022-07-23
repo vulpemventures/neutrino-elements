@@ -12,6 +12,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -99,7 +100,8 @@ func invokeNeutrinodWs(
 		t.Log(err)
 	}
 
-	receivedTxEventMsg := 0
+	var receivedTxEventMsg int32
+
 	go func() {
 		for {
 			_, message, err := c.ReadMessage()
@@ -115,7 +117,7 @@ func invokeNeutrinodWs(
 			if msg.TxID != "" {
 				t.Logf("id: %v, recv: %v", id, msg.TxID)
 
-				receivedTxEventMsg++
+				atomic.AddInt32(&receivedTxEventMsg, 1)
 			}
 
 		}
@@ -126,12 +128,12 @@ func invokeNeutrinodWs(
 
 	now := time.Now()
 	for {
-		t.Logf("id: %v, count: %v", id, receivedTxEventMsg)
+		t.Logf("id: %v, count: %v", id, atomic.LoadInt32(&receivedTxEventMsg))
 		if time.Since(now) > time.Second*45 {
 			t.Fatal("test timeout")
 		}
 
-		if receivedTxEventMsg == 2 {
+		if atomic.LoadInt32(&receivedTxEventMsg) == 2 {
 			time.Sleep(time.Second * 2)
 
 			if err := c.WriteMessage(

@@ -14,7 +14,22 @@ fmt:
 ## test: run tests
 test:
 	@echo "Testing..."
-	@go test -v ./... -timeout 300s
+	@go test -v ./... -timeout 150s
+
+## testpkg: run pkg tests
+testpkg:
+	go test -v -count=1 -race -timeout 360s ./pkg/...
+
+## teste2e: run e2e tests
+teste2e:
+	go test -v -count=1 -race -timeout 60s ./test/e2e/...
+
+## testpg: run pg tests
+testpg:
+	go test -v -count=1 -race -timeout 60s ./test/pg/...
+
+## testall: test all
+testall: testpkg teste2e testpg
 
 ## clean: clean up
 clean:

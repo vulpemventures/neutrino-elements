@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker run --name pg -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres
+docker run --name neutrino-elements-test -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres
 sleep 3
-docker exec pg createdb --username=root --owner=root neutrino-elements-test
-docker exec pg createdb --username=root --owner=root neutrino-elements
+docker exec neutrino-elements-test createdb --username=root --owner=root neutrino-elements-test
+docker exec neutrino-elements-test createdb --username=root --owner=root neutrino-elements
