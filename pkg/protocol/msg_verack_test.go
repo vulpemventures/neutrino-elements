@@ -15,7 +15,7 @@ func TestNewVerackMsg(t *testing.T) {
 		expected *protocol.Message
 	}{
 		{name: "ok",
-			input: protocol.MagicNigiri,
+			input: protocol.MagicRegtest,
 			err:   nil,
 			expected: &protocol.Message{
 				MessageHeader: protocol.MessageHeader{

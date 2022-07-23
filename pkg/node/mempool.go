@@ -24,22 +24,22 @@ type MemPool struct {
 
 	//txMap is a map of transactions that are in the memPool
 	txs map[string]txData
-	//txLock is a mutex to protect the txs map
+	//txsMutex is a mutex to protect the txs map
 	txsMutex *sync.RWMutex
 
+	//txSubscribersMutex is a mutex to protect the txs map
+	txSubscribersMutex *sync.RWMutex
 	//txSubscribers is a list of subscribers listening for new transactions
 	txSubscribers []txSubscriber
 }
 
-func NewMemPool(
-	logLevel log.Level,
-) MemPool {
-	log.SetLevel(logLevel)
+func NewMemPool() MemPool {
 	return MemPool{
-		txChan:   make(chan protocol.MsgTx),
-		txs:      make(map[string]txData),
-		quitChan: make(chan struct{}),
-		txsMutex: new(sync.RWMutex),
+		txChan:             make(chan protocol.MsgTx),
+		txs:                make(map[string]txData),
+		quitChan:           make(chan struct{}),
+		txsMutex:           new(sync.RWMutex),
+		txSubscribersMutex: new(sync.RWMutex),
 	}
 }
 
@@ -87,14 +87,15 @@ type txSubscriber struct {
 }
 
 func (m *MemPool) Start() {
-	log.Infoln("memPool started")
+	log.Debugln("mem-pool: mem-pool started")
 	go m.listenForNewTxs()
 }
 
 func (m *MemPool) Stop() {
 	close(m.txChan)
 	close(m.quitChan)
-	for _, v := range m.txSubscribers {
+	subs := m.getSubscribersSafe()
+	for _, v := range subs {
 		close(v.txEvent)
 	}
 }
@@ -116,6 +117,8 @@ func (m *MemPool) AddTx(tx protocol.MsgTx) {
 }
 
 func (m *MemPool) AddSubscriber(id string) <-chan TxEvent {
+	m.txSubscribersMutex.Lock()
+	defer m.txSubscribersMutex.Unlock()
 	txEvent := make(chan TxEvent)
 	m.txSubscribers = append(m.txSubscribers, txSubscriber{
 		id:      id,
@@ -123,6 +126,13 @@ func (m *MemPool) AddSubscriber(id string) <-chan TxEvent {
 	})
 
 	return txEvent
+}
+
+func (m *MemPool) getSubscribersSafe() []txSubscriber {
+	m.txSubscribersMutex.RLock()
+	defer m.txSubscribersMutex.RUnlock()
+
+	return m.txSubscribers
 }
 
 func (m *MemPool) CheckTxConfirmed(block block.Block) {
@@ -168,7 +178,7 @@ func (m *MemPool) addTx(txID string, txData txData) {
 }
 
 func (m *MemPool) listenForNewTxs() {
-	log.Infoln("listening for new transactions")
+	log.Debugln("mem-pool: listening for new transactions")
 
 	for tx := range m.txChan {
 		m.addTx(
@@ -187,11 +197,12 @@ func (m *MemPool) listenForNewTxs() {
 		log.Debugf("tx %s added to memPool", tx.HashStr())
 	}
 
-	log.Infoln("memPool listener stopped")
+	log.Debugln("mem-pool: memPool listener stopped")
 }
 
 func (m *MemPool) notifySubscribers(txEvent TxEvent) {
-	for _, v := range m.txSubscribers {
+	subs := m.getSubscribersSafe()
+	for _, v := range subs {
 		go func(subscriber txSubscriber) {
 			log.Debugf("notifying subscriber %s of new tx started", subscriber.id)
 			subscriber.txEvent <- txEvent

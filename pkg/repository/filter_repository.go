@@ -4,32 +4,24 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/btcutil/gcs/builder"
 )
 
-type FilterType byte
-
 const (
-	// only regular filter is supported for now
+	// RegularFilter is only filter type supported for now
 	RegularFilter FilterType = iota
 )
 
-// FilterKey is the unique key for a filter.
-// for each possible key, the repository should store 1 unique filter
-type FilterKey struct {
-	BlockHash  []byte
-	FilterType FilterType
+var ErrFilterNotFound = errors.New("filter not found")
+
+type FilterRepository interface {
+	PutFilter(context.Context, *FilterEntry) error
+	GetFilter(context.Context, FilterKey) (*FilterEntry, error)
 }
 
-func (k FilterKey) String() string {
-	hashedKey := btcutil.Hash160(append(k.BlockHash, byte(k.FilterType)))
-	return hex.EncodeToString(hashedKey[:6])
-}
-
-// FilterEntry is the base filter structure using to strore filter data.
+// FilterEntry is the base filter structure using to store filter data.
 type FilterEntry struct {
 	Key    FilterKey
 	NBytes []byte
@@ -51,9 +43,16 @@ func (f *FilterEntry) GcsFilter() (*gcs.Filter, error) {
 	return gcs.FromNBytes(builder.DefaultP, builder.DefaultM, f.NBytes)
 }
 
-var ErrFilterNotFound = errors.New("filter not found")
+type FilterType byte
 
-type FilterRepository interface {
-	PutFilter(context.Context, *FilterEntry) error
-	GetFilter(context.Context, FilterKey) (*FilterEntry, error)
+// FilterKey is the unique key for a filter.
+// for each possible key, the repository should store 1 unique filter
+type FilterKey struct {
+	BlockHash  []byte
+	FilterType FilterType
+}
+
+func (k FilterKey) String() string {
+	hashedKey := btcutil.Hash160(append(k.BlockHash, byte(k.FilterType)))
+	return hex.EncodeToString(hashedKey[:6])
 }

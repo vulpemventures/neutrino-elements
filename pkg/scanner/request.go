@@ -1,9 +1,16 @@
 package scanner
 
+import "github.com/google/uuid"
+
 type ScanRequest struct {
-	StartHeight  uint32    // nil means scan from genesis block
-	Item         WatchItem // item to watch
-	IsPersistent bool      // if true, the request will be re-added with StartHeight = StartHeiht + 1
+	// ClientID of the client sending request
+	ClientID uuid.UUID
+	// StartHeight from which scan should be performed, nil means scan from genesis block
+	StartHeight uint32
+	// Item to watch
+	Item WatchItem
+	// IsPersistent if true, the request will be re-added with StartHeight = StartHeiht + 1
+	IsPersistent bool
 }
 
 type ScanRequestOption func(req *ScanRequest)
@@ -23,6 +30,12 @@ func WithStartBlock(blockHeight uint32) ScanRequestOption {
 func WithPersistentWatch() ScanRequestOption {
 	return func(req *ScanRequest) {
 		req.IsPersistent = true
+	}
+}
+
+func WithRequestID(id uuid.UUID) ScanRequestOption {
+	return func(req *ScanRequest) {
+		req.ClientID = id
 	}
 }
 

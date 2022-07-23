@@ -17,8 +17,8 @@ func TestHardcodedGenesisBlockHeader(t *testing.T) {
 	}{
 		{
 			name:               "regtest",
-			genesisBlockToTest: &protocol.NigiriGenesisHeader,
-			expectedHash:       protocol.NigiriGenesisBlockHash,
+			genesisBlockToTest: &protocol.RegtestGenesisHeader,
+			expectedHash:       protocol.RegtestGenesisBlockHash,
 		},
 		{
 			name:               "testnet",

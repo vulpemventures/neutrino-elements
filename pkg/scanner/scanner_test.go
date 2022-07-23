@@ -3,10 +3,11 @@ package scanner_test
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/google/uuid"
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -20,10 +21,10 @@ func TestWatch(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
-	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
+	watchItem, err := scanner.NewUnspentWatchItemFromAddress(address)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,10 +59,10 @@ func TestWatchPersistent(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
-	watchItem, err := scanner.NewScriptWatchItemFromAddress(address)
+	watchItem, err := scanner.NewUnspentWatchItemFromAddress(address)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +107,7 @@ func TestWalletDescriptor(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
 	privkey, err := btcec.NewPrivateKey()
@@ -125,6 +126,7 @@ func TestWalletDescriptor(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
+		uuid.New(),
 		wpkhWalletDescriptor,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -154,7 +156,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 	n, s, reportCh := testutil.MakeNigiriTestServices(
 		testutil.PeerAddrLocal,
 		testutil.EsploraUrlLocal,
-		"nigiri",
+		"regtest",
 	)
 
 	masterPrivateKey, err := testutil.GenerateMasterPrivateKey()
@@ -206,6 +208,7 @@ func TestWalletDescriptorRange(t *testing.T) {
 	}
 
 	if err := s.WatchDescriptorWallet(
+		uuid.New(),
 		wpkhWalletDescriptor,
 		[]scanner.EventType{scanner.UnspentUtxo},
 		int(tip.Height),
@@ -233,7 +236,7 @@ loop:
 				break loop
 			}
 			t.Log(r.Transaction.TxHash().String())
-		case <-time.After(time.Minute):
+		case <-time.After(time.Minute * 2):
 			break loop
 		}
 	}
@@ -243,50 +246,5 @@ loop:
 	s.Stop()
 	if err := n.Stop(); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestWalletDescriptorTestNet(t *testing.T) {
-	t.SkipNow()
-	descInternal := "wpkh(xpub6CLsieBwg2jBNBbfoF7UqA6FnU6RjQLT2BXYRTxwq9BfTsSuMiEemky8jVnoECZSrqiJmyUCZUTg9SXJxFYZzzo66KVqL1Z4fYTb9rF6u3F/0/*)"
-	descExternal := "wpkh(xpub6CLsieBwg2jBNBbfoF7UqA6FnU6RjQLT2BXYRTxwq9BfTsSuMiEemky8jVnoECZSrqiJmyUCZUTg9SXJxFYZzzo66KVqL1Z4fYTb9rF6u3F/1/*)"
-
-	n, s, reportCh := testutil.MakeNigiriTestServices(
-		"liquid-testnet.sevenlabs.dev:18886",
-		"http://blockstream.info/liquidtestnet/api",
-		"testnet",
-	)
-
-	time.Sleep(time.Minute * 1)
-
-	tip, err := n.GetChainTip()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := s.WatchDescriptorWallet(
-		descInternal,
-		[]scanner.EventType{scanner.UnspentUtxo},
-		int(tip.Height),
-	); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := s.WatchDescriptorWallet(
-		descExternal,
-		[]scanner.EventType{scanner.UnspentUtxo},
-		int(tip.Height),
-	); err != nil {
-		t.Fatal(err)
-	}
-
-loop:
-	for {
-		select {
-		case r := <-reportCh:
-			t.Log(r.Transaction.TxHash().String())
-		case <-time.After(time.Minute * 15):
-			break loop
-		}
 	}
 }

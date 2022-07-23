@@ -44,8 +44,8 @@ func (n *node) monitorPeers() {
 			if peerID == "" {
 				break
 			}
-			peer := n.Peers[peerID]
-			if peer == nil {
+			p := n.Peers[peerID]
+			if p == nil {
 				break
 			}
 
