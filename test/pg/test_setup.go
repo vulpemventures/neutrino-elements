@@ -40,10 +40,10 @@ func (s *PgDbTestSuite) SetupSuite() {
 	dbSvc = d
 
 	if dbSvc != nil {
-		//err := dbSvc.CreateLoader(dbSvc.Db.DB)
-		//if err != nil {
-		//	s.FailNow(err.Error())
-		//}
+		err := dbSvc.CreateLoader(dbSvc.Db.DB)
+		if err != nil {
+			s.FailNow(err.Error())
+		}
 	}
 
 	fr, err := dbpg.NewFilterRepositoryImpl(dbSvc)
@@ -71,9 +71,9 @@ func (s *PgDbTestSuite) TearDownSuite() {
 }
 
 func (s *PgDbTestSuite) BeforeTest(suiteName, testName string) {
-	//if err := dbSvc.LoadFixtures(); err != nil {
-	//	s.FailNow(err.Error())
-	//}
+	if err := dbSvc.LoadFixtures(); err != nil {
+		s.FailNow(err.Error())
+	}
 }
 
 func (s *PgDbTestSuite) AfterTest(suiteName, testName string) {

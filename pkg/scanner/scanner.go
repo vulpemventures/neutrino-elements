@@ -104,7 +104,7 @@ func (s *scannerService) Stop() {
 
 	s.quitCh <- struct{}{}
 	s.started = false
-	//s.requestsQueue = newScanRequestQueue()
+	//s.requestsQueue = newScanRequestQueue() TODO: commented cause data race
 }
 
 func (s *scannerService) Watch(opts ...ScanRequestOption) {
