@@ -42,7 +42,7 @@ func LoadConfig() error {
 	vip.SetEnvPrefix("NEUTRINO_ELEMENTS")
 	vip.AutomaticEnv()
 
-	vip.SetDefault(NeutrinoDUrlKey, ":8000")
+	vip.SetDefault(NeutrinoDUrlKey, "localhost:8000")
 	vip.SetDefault(ExplorerUrlKey, "http://localhost:3001")
 	vip.SetDefault(PeerUrlKey, "localhost:18886")
 	vip.SetDefault(NetworkKey, network.Regtest.Name)

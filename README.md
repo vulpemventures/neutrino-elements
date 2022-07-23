@@ -41,6 +41,19 @@ make build-n
 make test
 ```
 
+### Run neutrinod and postgres db inside Docker container
+
+```
+make dev
+```
+
+### Run neutrinod and postgres db separately
+
+- Run `make pgcreatedb` to create database inside postgres container
+- Run(or use binaries) `go run ./cmd/neutrinod/main.go` to start neutrinod
+- Run `make wpkh` to fund address with two transactions and get wpkh wallet descriptor
+- Run `go run ./cmd/neutrino/* subscribe --descriptor="{WPKH_DESCRIPTOR}" --block_height=0 --events=unspentUtxo` to watch for events
+
 ## Usage
 
 ### Run neutrinod

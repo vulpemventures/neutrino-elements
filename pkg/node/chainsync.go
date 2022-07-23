@@ -9,7 +9,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
-	"sync"
 	"time"
 )
 
@@ -19,10 +18,6 @@ var zeroHash [32]byte = [32]byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }
-
-var (
-	notifySyncedOnce sync.Once
-)
 
 func (n *node) synced(p peer.Peer) (bool, error) {
 	chainTip, err := n.blockHeadersDb.ChainTip(context.Background())
@@ -120,7 +115,7 @@ func (n *node) sync(p peer.Peer) {
 }
 
 func (n *node) notifySynced() {
-	notifySyncedOnce.Do(
+	n.notifySyncedOnce.Do(
 		func() {
 			log.Debugf("node: syncing block headers finished")
 			n.syncedChan <- struct{}{}

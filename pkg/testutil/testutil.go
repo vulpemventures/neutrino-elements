@@ -400,15 +400,13 @@ func addFeesToTransaction(p *pset.Pset, feeAmount uint64) {
 	updater.AddOutput(feeOutput)
 }
 
-var repoFilter = inmemory.NewFilterInmemory()
-var repoHeader = inmemory.NewHeaderInmemory()
-
 func MakeNigiriTestServices(
 	peerUrl string,
 	esploraUrl string,
 	network string,
-) (node.NodeService, scanner.Service,
-	<-chan scanner.Report) {
+) (node.NodeService, scanner.Service, <-chan scanner.Report) {
+	repoFilter := inmemory.NewFilterInmemory()
+	repoHeader := inmemory.NewHeaderInmemory()
 	n, err := node.New(node.NodeConfig{
 		Network:        network,
 		UserAgent:      "neutrino-elements:test",

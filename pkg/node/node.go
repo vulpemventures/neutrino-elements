@@ -13,6 +13,7 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
 	"io"
 	"runtime/debug"
+	"sync"
 )
 
 const (
@@ -49,6 +50,8 @@ type node struct {
 
 	quit       chan struct{}
 	syncedChan chan struct{}
+
+	notifySyncedOnce sync.Once
 }
 
 var _ NodeService = (*node)(nil)

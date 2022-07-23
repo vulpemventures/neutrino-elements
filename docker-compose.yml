@@ -30,6 +30,7 @@ services:
       NEUTRINO_ELEMENTS_DB_PORT: 5432
       NEUTRINO_ELEMENTS_EXPLORER_URL: http://chopsticks-liquid:3000
       NEUTRINO_ELEMENTS_PEER_URL: liquid:18886
+      NEUTRINO_ELEMENTS_NEUTRINOD_URL: :8000
     networks:
       - nigiri
 
