@@ -236,7 +236,7 @@ loop:
 				break loop
 			}
 			t.Log(r.Transaction.TxHash().String())
-		case <-time.After(time.Minute):
+		case <-time.After(time.Minute * 2):
 			break loop
 		}
 	}
