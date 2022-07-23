@@ -14,7 +14,7 @@ fmt:
 ## test: run tests
 test:
 	@echo "Testing..."
-	@go test -v ./... -timeout 120s
+	@go test -v ./... -timeout 300s
 
 ## clean: clean up
 clean:
