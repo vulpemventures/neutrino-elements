@@ -20,6 +20,10 @@ func (e *E2ESuite) SetupSuite() {
 		e.FailNow(err.Error())
 	}
 
+	if err := testutil.TruncateDB(); err != nil {
+		e.FailNow(err.Error())
+	}
+
 	e.T().Setenv("NEUTRINO_ELEMENTS_DB_NAME", "neutrino-elements-test")
 	e.T().Setenv("NEUTRINO_ELEMENTS_DB_MIGRATION_PATH", "file://../../internal/infrastructure/storage/db/pg/migration")
 

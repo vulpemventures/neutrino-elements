@@ -24,6 +24,9 @@ func (s *PgDbTestSuite) SetupSuite() {
 	if err := testutil.SetupDB(); err != nil {
 		s.FailNow(err.Error())
 	}
+	if err := testutil.TruncateDB(); err != nil {
+		s.FailNow(err.Error())
+	}
 
 	d, err := dbpg.NewDbService(dbpg.DbConfig{
 		DbUser:     "root",
