@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ func (n *node) synced(p peer.Peer) (bool, error) {
 		return false, err
 	}
 
-	if chainTip.Height != p.StartBlockHeight() {
+	if chainTip.Height < p.StartBlockHeight() {
 		return false, nil
 	}
 
