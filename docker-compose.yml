@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - pg
+      - neutrinod-db
     restart: unless-stopped
     ports:
       - "8000:8000"
