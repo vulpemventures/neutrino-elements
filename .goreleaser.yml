@@ -1,0 +1,184 @@
+builds:
+  # daemon
+
+  ### Linux
+  - id: "neutrinod-linux-amd64"
+    main: ./cmd/neutrinod
+    ldflags:
+      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    binary: neutrinod-linux-amd64
+
+  - id: "neutrinod-linux-arm64"
+    main: ./cmd/neutrinod
+    ldflags:
+      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    goos:
+      - linux
+    goarch:
+      - arm64
+    binary: neutrinod-linux-arm64
+
+  ### Darwin
+
+  - id: "neutrinod-darwin-amd64"
+    main: ./cmd/neutrinod
+    ldflags:
+      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
+    env:
+      - CGO_ENABLED=1
+      - CC=/home/runner/work/osxcross/target/bin/o64-clang
+      - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    binary: neutrinod-darwin-amd64
+
+  - id: "neutrinod-darwin-arm64"
+    main: ./cmd/neutrinod
+    ldflags:
+      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
+    env:
+      - CGO_ENABLED=1
+      - CC=/home/runner/work/osxcross/target/bin/oa64-clang
+      - CXX=/home/runner/work/osxcross/target/bin/oa64-clang++
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    binary: neutrinod-darwin-arm64
+
+  # CLI
+  - id: "neutrino"
+    main: ./cmd/neutrino
+    ldflags:
+      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: neutrino
+
+## flag the semver v**.**.**-<tag>.* as pre-release on Github
+release:
+  prerelease: auto
+
+checksum:
+  name_template: "checksums.txt"
+
+signs:
+  - artifacts: checksum
+    args:
+      [
+        "--batch",
+        "-u",
+        "{{ .Env.GPG_FINGERPRINT }}",
+        "--output",
+        "${signature}",
+        "--detach-sign",
+        "${artifact}",
+      ]
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  use: github-native
+
+archives:
+  - id: neutrinod
+    format: binary
+    builds:
+      - neutrinod-linux-amd64
+      - neutrinod-linux-arm64
+      - neutrinod-darwin-amd64
+      - neutrinod-darwin-arm64
+    name_template: "neutrinod-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+  - id: neutrino
+    format: binary
+    builds:
+      - neutrino
+    name_template: "neutrino-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+dockers:
+  ###########################
+  # tag latest & prerelease #
+  ###########################
+
+  #amd64
+  - image_templates:
+      - "ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-amd64"
+        # push always either release or prerelease with a docker tag with the semver only
+    skip_push: "false"
+    use: buildx
+    ids:
+      - neutrino
+      - neutrinod
+    dockerfile: goreleaser.Dockerfile
+    # GOOS of the built binaries/packages that should be used.
+    goos: linux
+    # GOARCH of the built binaries/packages that should be used.
+    goarch: amd64
+    # Template of the docker build flags.
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title=neutrinod"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+    extra_files:
+      - internal/infrastructure/storage/db/pg/migrations/
+
+  # arm64
+  - image_templates:
+      - "ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-arm64v8"
+        # push always either release or prerelease with a docker tag with the semver only
+    skip_push: "false"
+    use: buildx
+    ids:
+      - neutrino
+      - neutrinod
+    dockerfile: goreleaser.Dockerfile
+    # GOOS of the built binaries/packages that should be used.
+    goos: linux
+    # GOARCH of the built binaries/packages that should be used.
+    goarch: arm64
+    # Template of the docker build flags.
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title=neutrinod"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+    extra_files:
+      - internal/infrastructure/storage/db/pg/migrations/
+
+docker_manifests:
+  - name_template: ghcr.io/vulpemventures/neutrinod:{{ .Tag }}
+    image_templates:
+      - ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-amd64
+      - ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-arm64v8
+    skip_push: "false"
+
+  - name_template: ghcr.io/vulpemventures/neutrinod:latest
+    image_templates:
+      - ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-amd64
+      - ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-arm64v8
+    skip_push: auto

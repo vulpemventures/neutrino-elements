@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/neutrino-elements/pkg/peer"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
 	"github.com/vulpemventures/neutrino-elements/pkg/repository"
+	"time"
 )
 
 var zeroHash [32]byte = [32]byte{
@@ -38,7 +39,11 @@ func (n *node) synced(p peer.Peer) (bool, error) {
 		return false, err
 	}
 
-	if chainTip.Height != p.StartBlockHeight() {
+	log.Debugf("node: tipHasAllAncestors: %v", tipHasAllAncestors)
+	log.Debugf("node: chainTip: %v", chainTip.Height)
+	log.Debugf("node: PeersTip: %v", p.PeersTip())
+
+	if chainTip.Height < p.PeersTip() {
 		return false, nil
 	}
 
@@ -51,13 +56,13 @@ func (n *node) getGenesisBlockHash() (*chainhash.Hash, error) {
 }
 
 func (n *node) syncWithPeer(peerID peer.PeerID) error {
-	peer := n.Peers[peerID]
+	log.Infof("node: syncing block headers with peer: %s ...", peerID)
 
-	if peer == nil {
+	p := n.Peers[peerID]
+
+	if p == nil {
 		return fmt.Errorf("peer %s not found", peerID)
 	}
-
-	var stopHash [32]byte
 
 	locator, err := n.blockHeadersDb.LatestBlockLocator(context.Background())
 	if err != nil {
@@ -68,25 +73,35 @@ func (n *node) syncWithPeer(peerID peer.PeerID) error {
 			}
 
 			locator = blockchain.BlockLocator{genesisHash}
-			stopHash = zeroHash
 		} else {
 			return err
 		}
-	} else {
-		stopHash = *locator[len(locator)-1]
 	}
+	stopHash := zeroHash
 
 	msg, err := protocol.NewMsgGetHeaders(n.Network, stopHash, locator)
 	if err != nil {
 		return err
 	}
 
-	logrus.Debugf("sending getheaders to peer %s", peerID)
-	if err := n.sendMessage(peer.Connection(), msg); err != nil {
+	log.Debugf("sending getheaders to p %s", peerID)
+	if err := n.sendMessage(p.Connection(), msg); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (n *node) checkSyncedInitial(p peer.Peer) {
+	for {
+		log.Debug("node: checkSynced")
+		isSynced, _ := n.synced(p)
+		if isSynced {
+			n.notifySynced()
+			return
+		}
+		time.Sleep(time.Second * 1)
+	}
 }
 
 func (n *node) sync(p peer.Peer) {
@@ -99,14 +114,17 @@ func (n *node) sync(p peer.Peer) {
 		}
 	}
 
-	isSynced, _ := n.synced(p)
-
-	if isSynced {
-		logrus.Infof("node: block headers synced with peer: %s", p.ID())
-		return
-	}
-
 	if err := n.syncWithPeer(p.ID()); err != nil {
-		logrus.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
+		log.Errorf("node: sync block headers with peer: %s failed: %s", p.ID(), err)
 	}
+}
+
+func (n *node) notifySynced() {
+	log.Debug("node: notifySynced")
+	n.notifySyncedOnce.Do(
+		func() {
+			log.Debugf("node: syncing block headers finished")
+			n.syncedChan <- struct{}{}
+		},
+	)
 }

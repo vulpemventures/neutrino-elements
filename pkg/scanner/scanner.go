@@ -3,6 +3,7 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 
 	"github.com/vulpemventures/go-elements/descriptor"
 
@@ -18,6 +19,7 @@ import (
 
 const (
 	UnspentUtxo EventType = iota
+	SpentUtxo
 
 	numOsScripts = 100
 )
@@ -36,7 +38,7 @@ type Report struct {
 	Request *ScanRequest
 }
 
-type ScannerService interface {
+type Service interface {
 	// Start runs a go-routine in order to handle incoming requests via Watch
 	Start() (<-chan Report, error)
 	// Stop the scanner
@@ -46,6 +48,7 @@ type ScannerService interface {
 	// WatchDescriptorWallet imports wallet descriptor, generates scripts and which
 	//for specific events for those scripts
 	WatchDescriptorWallet(
+		requestID uuid.UUID,
 		descriptor string,
 		eventType []EventType,
 		blockStart int,
@@ -62,14 +65,14 @@ type scannerService struct {
 	quitCh        chan struct{}
 }
 
-var _ ScannerService = (*scannerService)(nil)
+var _ Service = (*scannerService)(nil)
 
 func New(
 	filterDB repository.FilterRepository,
 	headerDB repository.BlockHeaderRepository,
 	blockSvc blockservice.BlockService,
 	genesisHash *chainhash.Hash,
-) ScannerService {
+) Service {
 	return &scannerService{
 		requestsQueue: newScanRequestQueue(),
 		filterDB:      filterDB,
@@ -81,7 +84,7 @@ func New(
 }
 
 func (s *scannerService) Start() (<-chan Report, error) {
-	log.Info("starting scanner")
+	log.Debugln("scanner: starting scanner ...")
 
 	if s.started {
 		return nil, fmt.Errorf("scanner already started")
@@ -97,11 +100,11 @@ func (s *scannerService) Start() (<-chan Report, error) {
 }
 
 func (s *scannerService) Stop() {
-	log.Info("stopping scanner")
+	log.Debugln("scanner: stopping scanner ...")
 
 	s.quitCh <- struct{}{}
 	s.started = false
-	s.requestsQueue = newScanRequestQueue()
+	//s.requestsQueue = newScanRequestQueue() TODO: commented cause data race
 }
 
 func (s *scannerService) Watch(opts ...ScanRequestOption) {
@@ -110,6 +113,7 @@ func (s *scannerService) Watch(opts ...ScanRequestOption) {
 }
 
 func (s *scannerService) WatchDescriptorWallet(
+	requestID uuid.UUID,
 	desc string,
 	eventType []EventType,
 	blockStart int,
@@ -132,8 +136,9 @@ func (s *scannerService) WatchDescriptorWallet(
 
 				for _, v := range scripts {
 					s.Watch(
+						WithRequestID(requestID),
 						WithStartBlock(uint32(blockStart)),
-						WithWatchItem(&ScriptWatchItem{
+						WithWatchItem(&UnspentWatchItem{
 							outputScript: v.Script,
 						}),
 						WithPersistentWatch(),
@@ -146,8 +151,9 @@ func (s *scannerService) WatchDescriptorWallet(
 				}
 
 				s.Watch(
+					WithRequestID(requestID),
 					WithStartBlock(uint32(blockStart)),
-					WithWatchItem(&ScriptWatchItem{
+					WithWatchItem(&UnspentWatchItem{
 						outputScript: scripts[0].Script,
 					}),
 					WithPersistentWatch(),
@@ -167,7 +173,7 @@ func (s *scannerService) requestsManager(ch chan<- Report) {
 	for {
 		s.requestsQueue.cond.L.Lock()
 		for s.requestsQueue.isEmpty() {
-			logrus.Debug("scanner queue is empty, waiting for new requests")
+			logrus.Debug("scanner: scanner queue is empty, waiting for new requests")
 			s.requestsQueue.cond.Wait() // wait for new requests
 
 			// check if we should quit the routine
@@ -248,7 +254,12 @@ func (s *scannerService) requestWorker(startHeight uint32, reportsChan chan<- Re
 
 				// if the request is persistent, the scanner will keep watching the item at the next block height
 				if report.Request.IsPersistent {
-					s.Watch(WithStartBlock(report.BlockHeight+1), WithWatchItem(report.Request.Item), WithPersistentWatch())
+					s.Watch(
+						WithRequestID(report.Request.ClientID),
+						WithStartBlock(report.BlockHeight+1),
+						WithWatchItem(report.Request.Item),
+						WithPersistentWatch(),
+					)
 				}
 			}
 

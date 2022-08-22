@@ -26,7 +26,7 @@ func GetCheckpoints(net Magic) Checkpoints {
 		return mainnetCheckpoints
 	case MagicLiquidTestnet:
 		return testnetCheckpoints
-	case MagicNigiri:
+	case MagicRegtest:
 		return regtestCheckpoints
 	default:
 		return regtestCheckpoints

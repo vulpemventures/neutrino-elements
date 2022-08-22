@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/inmemory"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,7 +23,6 @@ import (
 	"github.com/vulpemventures/neutrino-elements/pkg/blockservice"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
 	"github.com/vulpemventures/neutrino-elements/pkg/protocol"
-	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 	"github.com/vulpemventures/neutrino-elements/pkg/scanner"
 
 	"github.com/btcsuite/btcd/btcec/v2"
@@ -241,6 +241,19 @@ func BlindTransaction(
 	return BlindTransactionByIndex(p, inBlindKeys, outputsPrivKeyByIndex, issuanceBlindKeys)
 }
 
+func GetRawBlock(hash string) ([]byte, error) {
+	url := fmt.Sprintf("%s/block/%s/raw", baseURL, hash)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 func BlindTransactionByIndex(
 	p *pset.Pset,
 	inBlindKeys [][]byte,
@@ -387,15 +400,13 @@ func addFeesToTransaction(p *pset.Pset, feeAmount uint64) {
 	updater.AddOutput(feeOutput)
 }
 
-var repoFilter = inmemory.NewFilterInmemory()
-var repoHeader = inmemory.NewHeaderInmemory()
-
 func MakeNigiriTestServices(
 	peerUrl string,
 	esploraUrl string,
 	network string,
-) (node.NodeService, scanner.ScannerService,
-	<-chan scanner.Report) {
+) (node.NodeService, scanner.Service, <-chan scanner.Report) {
+	repoFilter := inmemory.NewFilterInmemory()
+	repoHeader := inmemory.NewHeaderInmemory()
 	n, err := node.New(node.NodeConfig{
 		Network:        network,
 		UserAgent:      "neutrino-elements:test",
@@ -415,7 +426,7 @@ func MakeNigiriTestServices(
 	time.Sleep(time.Second * 3) // wait for the node sync the first headers if the repo is empty
 
 	blockSvc := blockservice.NewEsploraBlockService(esploraUrl)
-	genesisBlockHash := protocol.GetCheckpoints(protocol.MagicNigiri)[0]
+	genesisBlockHash := protocol.GetCheckpoints(protocol.MagicRegtest)[0]
 	h, err := chainhash.NewHashFromStr(genesisBlockHash)
 	if err != nil {
 		panic(err)

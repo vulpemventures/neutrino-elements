@@ -1,8 +1,8 @@
 package node_test
 
 import (
+	"github.com/vulpemventures/neutrino-elements/internal/infrastructure/storage/db/inmemory"
 	"github.com/vulpemventures/neutrino-elements/pkg/node"
-	"github.com/vulpemventures/neutrino-elements/pkg/repository/inmemory"
 	"github.com/vulpemventures/neutrino-elements/pkg/testutil"
 	"testing"
 	"time"
@@ -10,7 +10,7 @@ import (
 
 func TestSendTransaction(t *testing.T) {
 	nodeSvc, err := node.New(node.NodeConfig{
-		Network:        "nigiri",
+		Network:        "regtest",
 		UserAgent:      "neutrino-elements:0.0.1",
 		FiltersDB:      inmemory.NewFilterInmemory(),
 		BlockHeadersDB: inmemory.NewHeaderInmemory(),
