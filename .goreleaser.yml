@@ -129,7 +129,7 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
 
     extra_files:
-      - internal/infrastructure/storage/db/pg/migrations/
+      - internal/infrastructure/storage/db/pg/migration/
 
   # arm64
   - image_templates:
@@ -155,7 +155,7 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
 
     extra_files:
-      - internal/infrastructure/storage/db/pg/migrations/
+      - internal/infrastructure/storage/db/pg/migration/
 
 docker_manifests:
   - name_template: ghcr.io/vulpemventures/neutrinod:{{ .Tag }}
