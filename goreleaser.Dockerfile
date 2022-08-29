@@ -8,11 +8,8 @@ WORKDIR /app
 COPY . .
 
 RUN set -ex \
-  && if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export TARGETPLATFORM=amd64; fi \
-  && if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then export TARGETPLATFORM=arm64; fi \
   && mv neutrinod /usr/local/bin/neutrinod \
-  && mv neutrino /usr/local/bin/neutrino \
-  && mv "neutrinod-linux-$TARGETPLATFORM" /usr/local/bin/neutrinod
+  && mv neutrino /usr/local/bin/neutrino
 
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
