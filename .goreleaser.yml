@@ -1,62 +1,16 @@
 builds:
-  # daemon
-
-  ### Linux
-  - id: "neutrinod-linux-amd64"
+  # neutrinod
+  - id: "neutrinod"
     main: ./cmd/neutrinod
     ldflags:
       - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
-    env:
-      - CGO_ENABLED=1
     goos:
       - linux
-    goarch:
-      - amd64
-    binary: neutrinod-linux-amd64
-
-  - id: "neutrinod-linux-arm64"
-    main: ./cmd/neutrinod
-    ldflags:
-      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-    goos:
-      - linux
-    goarch:
-      - arm64
-    binary: neutrinod-linux-arm64
-
-  ### Darwin
-
-  - id: "neutrinod-darwin-amd64"
-    main: ./cmd/neutrinod
-    ldflags:
-      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
-    env:
-      - CGO_ENABLED=1
-      - CC=/home/runner/work/osxcross/target/bin/o64-clang
-      - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
-    goos:
       - darwin
     goarch:
       - amd64
-    binary: neutrinod-darwin-amd64
-
-  - id: "neutrinod-darwin-arm64"
-    main: ./cmd/neutrinod
-    ldflags:
-      - -s -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
-    env:
-      - CGO_ENABLED=1
-      - CC=/home/runner/work/osxcross/target/bin/oa64-clang
-      - CXX=/home/runner/work/osxcross/target/bin/oa64-clang++
-    goos:
-      - darwin
-    goarch:
       - arm64
-    binary: neutrinod-darwin-arm64
+    binary: neutrinod
 
   # CLI
   - id: "neutrino"
@@ -88,10 +42,7 @@ archives:
   - id: neutrinod
     format: binary
     builds:
-      - neutrinod-linux-amd64
-      - neutrinod-linux-arm64
-      - neutrinod-darwin-amd64
-      - neutrinod-darwin-arm64
+      - neutrinod
     name_template: "neutrinod-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 
   - id: neutrino
@@ -128,9 +79,6 @@ dockers:
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
 
-    extra_files:
-      - internal/infrastructure/storage/db/pg/migration/
-
   # arm64
   - image_templates:
       - "ghcr.io/vulpemventures/neutrinod:{{ .Tag }}-arm64v8"
@@ -153,9 +101,6 @@ dockers:
       - "--label=org.opencontainers.image.title=neutrinod"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-
-    extra_files:
-      - internal/infrastructure/storage/db/pg/migration/
 
 docker_manifests:
   - name_template: ghcr.io/vulpemventures/neutrinod:{{ .Tag }}

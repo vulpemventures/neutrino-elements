@@ -34,21 +34,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # This because https://github.com/plentico/osxcross-target/issues/2#issuecomment-815850611
-      - name: Downgrade libssl
-        run: |
-          echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' | sudo tee -a /etc/apt/sources.list
-          sudo apt update && apt-cache policy libssl1.0-dev
-          sudo apt-get install libssl1.0-dev
-
-      - name: Install OSX cross-compiling targets
-        run: |
-          mkdir ../../osxcross
-          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
-
-      - name: Install Linux aarch64 cross-compiling targets
-        run: sudo apt install gcc make gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
-
       - name: Docker Login
         uses: docker/login-action@v1
         with:
@@ -63,4 +48,3 @@ jobs:
           args: release --rm-dist --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
