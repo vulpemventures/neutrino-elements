@@ -22,7 +22,7 @@ require (
 	github.com/stretchr/testify v1.7.2
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-bip39 v1.0.2
-	github.com/vulpemventures/go-elements v0.4.0-rc.1
+	github.com/vulpemventures/go-elements v0.4.0
 )
 
 require (
